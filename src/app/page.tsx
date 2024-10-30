@@ -29,7 +29,7 @@ export default function Home() {
         <strong>{message.sender}</strong>{message.content}</div>
     ))}
     <form onSubmit={handleSubmit}>
-      <input type="text" name="message" id="message"  value={input} onChange={e => setInput(e.target.value)}/>
+      <input type="text" name="message" id="message"  value={input} onChange={e =>  setInput(e.target.value)}/>
       <button type="submit">Send</button>
     </form>
     </div>
