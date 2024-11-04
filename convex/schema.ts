@@ -6,7 +6,7 @@ export default defineSchema({
     username: v.string(),
     image: v.string(),
     clerkId: v.string(),
-  }).index("by_clerkId", ["clerkId"]),
+  }).index("by_clerk_Id", ["clerkId"]),
   messages: defineTable({
     sender: v.string(),
     content: v.string(),

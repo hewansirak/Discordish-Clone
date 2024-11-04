@@ -11,7 +11,7 @@ export const upsert = internalMutation({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .withIndex("by_clerk_Id", (q) => q.eq("clerkId", args.clerkId))
       .unique();
     if (user) {
       await ctx.db.patch(user._id, {
@@ -33,7 +33,7 @@ export const remove = internalMutation({
   handler: async (ctx, { clerkId }) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
+      .withIndex("by_clerk_Id", (q) => q.eq("clerkId", clerkId))
       .unique();
     if (user) {
       await ctx.db.delete(user._id);
