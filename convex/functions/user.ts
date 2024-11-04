@@ -7,12 +7,12 @@ export const upsert = internalMutation({
     image: v.string(),
     clerkId: v.string(),
   },
-  handlers: async (ctx, args) => {
+
+  handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
       .unique();
-
     if (user) {
       await ctx.db.patch(user._id, {
         username: args.username,
@@ -29,15 +29,12 @@ export const upsert = internalMutation({
 });
 
 export const remove = internalMutation({
-  args: {
-    clerkId: v.string(),
-  },
-  handler: async (ctx, clerkId) => {
+  args: { clerkId: v.string() },
+  handler: async (ctx, { clerkId }) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
       .unique();
-
     if (user) {
       await ctx.db.delete(user._id);
     }
