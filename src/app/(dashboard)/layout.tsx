@@ -1,9 +1,8 @@
 "use client";
-
-import { SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
 import { RedirectToSignIn } from "@clerk/nextjs";
 import { Authenticated, Unauthenticated } from "convex/react";
-import { Link, Sidebar } from "lucide-react";
+import Link from "next/link";
 
 export default function DashboardLayout({
   children,
@@ -35,6 +34,5 @@ function DashboardSidebar() {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
-
   )
 }
