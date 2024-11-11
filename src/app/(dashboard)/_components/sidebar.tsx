@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Sidebar,
@@ -11,20 +11,19 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@/components/ui/sidebar';
+} from "@/components/ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { PlusIcon, User2Icon } from 'lucide-react';
-import Link from 'next/link';
-import { api } from '../../../../convex/_generated/api';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useQuery } from 'convex/react';
-import { SignOutButton } from '@clerk/nextjs';
-
+} from "@/components/ui/dropdown-menu";
+import { PlusIcon, User2Icon } from "lucide-react";
+import Link from "next/link";
+import { api } from "../../../../convex/_generated/api";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useQuery } from "convex/react";
+import { SignOutButton } from "@clerk/nextjs";
 
 export function DashboardSidebar() {
   const user = useQuery(api.functions.user.get);
@@ -37,7 +36,7 @@ export function DashboardSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <Link href='/friends'>
+                  <Link href="/friends">
                     <User2Icon />
                     Friends
                   </Link>
@@ -48,7 +47,7 @@ export function DashboardSidebar() {
           <SidebarGroupLabel>Direct Messages</SidebarGroupLabel>
           <SidebarGroupAction>
             <PlusIcon />
-            <span className='sr-only'>New Direct Message</span>
+            <span className="sr-only">New Direct Message</span>
           </SidebarGroupAction>
         </SidebarGroup>
       </SidebarContent>
@@ -59,12 +58,12 @@ export function DashboardSidebar() {
               <SidebarMenuItem>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <SidebarMenuButton className='flex items-center gap-2'>
-                      <Avatar className='size-6'>
+                    <SidebarMenuButton className="flex items-center gap-2">
+                      <Avatar className="size-6">
                         <AvatarImage src={user.image} />
                         <AvatarFallback>{user.username[0]}</AvatarFallback>
                       </Avatar>
-                      <p className='font-medium'>{user.username}</p>
+                      <p className="font-medium">{user.username}</p>
                     </SidebarMenuButton>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
