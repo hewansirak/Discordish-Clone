@@ -6,6 +6,7 @@ import {
   AcceptedFriendsList,
 } from "./_components/friends-list";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AddFriend } from "./_components/add-friends";
 
 export default function FriendsPage() {
   return (
@@ -13,6 +14,7 @@ export default function FriendsPage() {
       <header className="flex justify-between items-center p-4">
         <h1 className="font-semibold">Friends</h1>
         <Button size="sm">Add Friend</Button>
+        <AddFriend />
       </header>
       <div className="grid p-4 gap-4">
         <TooltipProvider delayDuration={0}>
