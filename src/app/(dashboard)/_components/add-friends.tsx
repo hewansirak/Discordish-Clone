@@ -17,7 +17,8 @@ import { useState } from "react";
 
 export function AddFriend() {
   const [open, setOpen] = useState(false);
-  const createFriendRequest = useMutation(api.functions.friends.friendRequest);
+  const createFriendRequest = useMutation(api.functions.friend.friendRequest);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
