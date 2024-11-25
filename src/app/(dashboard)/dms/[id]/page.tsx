@@ -35,6 +35,18 @@ export default async function MessagePage({
 }
 
 function MessageItem() {
+  const user = useQuery(api.functions.user.get);
 
-  // TODO : Add message item component
+  return (
+    <div className="flex items-center px-4 gap-2">
+      <Avatar className="size-8 border">
+        <AvatarImage src={user!.image} />
+        <AvatarFallback />
+      </Avatar>
+      <div className="flex flex-col">
+        <p className="text-xs text-muted-foreground">{user!.username}</p>
+        <p className="text-sm">Hello</p>
+      </div>
+    </div>
+  );
 }
