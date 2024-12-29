@@ -61,6 +61,24 @@ export default function MessagePage({
   );
 }
 
+function TypingIndicator({
+  directMessage,
+}: {
+  directMessage: Id<"directMessages">;
+}) {
+  const usernames = useQuery(api.functions.typing.list, { directMessage });
+
+  if (!usernames || usernames.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="text-sm text-muted-foreground px-4 py-2">
+      {usernames.join(", ")} is typing...
+    </div>
+  );
+}
+
 type Message = FunctionReturnType<typeof api.functions.message.list>[number];
 
 function MessageItem({ message }: { message: Message }) {
@@ -117,6 +135,7 @@ function MessageInput({
 }) {
   const [content, setContent] = useState("");
   const sendMessage = useMutation(api.functions.message.create);
+  const sendTypingIndicator = useMutation(api.functions.typing.upsert);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,11 +150,15 @@ function MessageInput({
   return (
     <form className="flex items-center gap-2 p-4" onSubmit={handleSubmit}>
       <input
-        type="text"
         placeholder="Message"
+        className="flex-1 bg-background"
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        className="flex-1 bg-background"
+        onKeyDown={(e) => {
+          if (content.length > 0) {
+            sendTypingIndicator({ directMessage });
+          }
+        }}
       />
       <Button size="icon">
         <SendIcon />
