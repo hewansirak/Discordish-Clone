@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -8,17 +8,33 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
 } from "@radix-ui/react-dropdown-menu";
-import { MoreVerticalIcon } from "lucide-react";
+import { MoreVerticalIcon, SendIcon } from "lucide-react";
 import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { TrashIcon } from "@radix-ui/react-icons";
+import { use, useState } from "react";
+import { Doc, Id } from "../../../../../convex/_generated/dataModel";
+import { FunctionReturnType } from "convex/server";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
-export default function MessagePage({ params }: { params: { id: string } }) {
-  const user = useQuery(api.functions.user.get);
+export default function MessagePage({
+  params,
+}: {
+  params: Promise<{ id: Id<"directMessages"> }>;
+}) {
+  const { id } = use(params);
+  const messages = useQuery(api.functions.message.list, {
+    directMessage: id,
+  });
 
-  if (!user) {
+  const directMessage = useQuery(api.functions.dm.get, {
+    id,
+  });
+
+  if (!directMessage) {
     return <p>Loading...</p>;
   }
 
@@ -26,41 +42,53 @@ export default function MessagePage({ params }: { params: { id: string } }) {
     <div className="flex flex-1 flex-col divide-y max-h-screen">
       <header className="flex items-center gap-2 p-4">
         <Avatar className="size-8 border">
-          <AvatarImage src={user.image || "/default-avatar.png"} />
+          <AvatarImage
+            src={directMessage.user.image || "/default-avatar.png"}
+          />
           <AvatarFallback />
         </Avatar>
-        <h1 className="font-semibold">{user.username || "Guest"}</h1>
+        <h1 className="font-semibold">
+          {directMessage.user.username || "Guest"}
+        </h1>
       </header>
       <ScrollArea className="h-full py-4">
-        <MessageItem />
+        {messages?.map((message) => (
+          <MessageItem key={message._id} message={message} />
+        ))}
       </ScrollArea>
+      <MessageInput directMessage={id} />
     </div>
   );
 }
 
-function MessageItem() {
-  const user = useQuery(api.functions.user.get);
+type Message = FunctionReturnType<typeof api.functions.message.list>[number];
 
-  if (!user) {
-    return null;
-  }
-
+function MessageItem({ message }: { message: Message }) {
   return (
-    <div className="flex items-center px-4 gap-2">
+    <div className="flex items-center px-4 gap-2 py-2">
       <Avatar className="size-8 border">
-        <AvatarImage src={user!.image || "/default-avatar.png"} />
+        {message.sender && (
+          <AvatarImage src={message.sender?.image || "/default-avatar.png"} />
+        )}
         <AvatarFallback />
       </Avatar>
       <div className="flex flex-col mr-auto">
-        <p className="text-xs text-muted-foreground">{user!.username}</p>
-        <p className="text-sm">Hello, World!!</p>
+        <p className="text-xs text-muted-foreground">
+          {message.sender?.username ?? "Deleted User"}
+        </p>
+        <p className="text-sm">{message.content}</p>
       </div>
-      <MessageActions />
+      <MessageActions message={message} />
     </div>
   );
 }
 
-function MessageActions() {
+function MessageActions({ message }: { message: Message }) {
+  const user = useQuery(api.functions.user.get);
+
+  if (!user || message.sender?._id !== user._id) {
+    return null;
+  }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
@@ -75,5 +103,40 @@ function MessageActions() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function MessageInput({
+  directMessage,
+}: {
+  directMessage: Id<"directMessages">;
+}) {
+  const [content, setContent] = useState("");
+  const sendMessage = useMutation(api.functions.message.create);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await sendMessage({ directMessage, content });
+      setContent("");
+    } catch (error) {
+      toast.error("Failed to send message");
+    }
+  };
+
+  return (
+    <form className="flex items-center gap-2 p-4" onSubmit={handleSubmit}>
+      <input
+        type="text"
+        placeholder="Message"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        className="flex-1 bg-background"
+      />
+      <Button size="icon">
+        <SendIcon />
+        <span className="sr-only">Send</span>
+      </Button>
+    </form>
   );
 }
