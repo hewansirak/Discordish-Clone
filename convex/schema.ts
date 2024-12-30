@@ -20,8 +20,25 @@ export default defineSchema({
   })
     .index("by_user1_status", ["user1", "status"])
     .index("by_user2_status", ["user2", "status"]),
+  directMessages: defineTable({}),
+  directMessageMembers: defineTable({
+    directMessage: v.id("directMessages"),
+    user: v.id("users"),
+  })
+    .index("by_directMessage", ["directMessage"])
+    .index("by_user", ["user"])
+    .index("by_directMessage_user", ["directMessage", "user"]),
   messages: defineTable({
-    sender: v.string(),
+    sender: v.id("users"),
     content: v.string(),
-  }),
+    directMessage: v.id("directMessages"),
+    attachment: v.optional(v.id("_storage")),
+  }).index("by_directMessage", ["directMessage"]),
+  typingIndicators: defineTable({
+    user: v.id("users"),
+    directMessage: v.id("directMessages"),
+    expiresAt: v.number(),
+  })
+    .index("by_directMessage", ["directMessage"])
+    .index("by_user_directMessage", ["user", "directMessage"]),
 });
