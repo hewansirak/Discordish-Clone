@@ -7,18 +7,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
-} from "@radix-ui/react-dropdown-menu";
-import { MoreVerticalIcon, SendIcon } from "lucide-react";
-import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { LoaderIcon, MoreVerticalIcon, PlusIcon, SendIcon } from "lucide-react";
 import { TrashIcon } from "@radix-ui/react-icons";
-import { use, useState } from "react";
+import { use, useRef, useState } from "react";
 import { Doc, Id } from "../../../../../convex/_generated/dataModel";
 import { FunctionReturnType } from "convex/server";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 export default function MessagePage({
   params,
@@ -44,9 +43,13 @@ export default function MessagePage({
         <Avatar className="size-8 border">
           <AvatarImage
             src={directMessage.user.image || "/default-avatar.png"}
+            alt="User Avatar"
           />
-          <AvatarFallback />
+          <AvatarFallback>
+            {directMessage.user.username?.[0] ?? "G"}
+          </AvatarFallback>
         </Avatar>
+
         <h1 className="font-semibold">
           {directMessage.user.username || "Guest"}
         </h1>
@@ -84,17 +87,28 @@ type Message = FunctionReturnType<typeof api.functions.message.list>[number];
 function MessageItem({ message }: { message: Message }) {
   return (
     <div className="flex items-center px-4 gap-2 py-2">
-      <Avatar className="size-8 border">
-        {message.sender && (
-          <AvatarImage src={message.sender?.image || "/default-avatar.png"} />
-        )}
-        <AvatarFallback />
+      <Avatar>
+        <AvatarImage
+          src={message.sender?.image || "/default-avatar.png"}
+          alt="User Avatar"
+        />
+        <AvatarFallback>{message.sender?.username?.[0] ?? "U"}</AvatarFallback>
       </Avatar>
+
       <div className="flex flex-col mr-auto">
         <p className="text-xs text-muted-foreground">
           {message.sender?.username ?? "Deleted User"}
         </p>
         <p className="text-sm">{message.content}</p>
+        {message.attachment && (
+          <img
+            src={message.attachment || "/default-avatar.png"}
+            width={300}
+            height={300}
+            alt="Attachment"
+            className="rounded border overflow-hidden"
+          />
+        )}
       </div>
       <MessageActions message={message} />
     </div>
@@ -136,34 +150,111 @@ function MessageInput({
   const [content, setContent] = useState("");
   const sendMessage = useMutation(api.functions.message.create);
   const sendTypingIndicator = useMutation(api.functions.typing.upsert);
+  const generateUploadUrl = useMutation(
+    api.functions.message.generateUploadUrl
+  );
+  const [attachment, setAttachment] = useState<Id<"_storage">>();
+  const [file, setFile] = useState<File>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUpLoading] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFile(file);
+    setIsUpLoading(true);
+    try {
+      const url = await generateUploadUrl();
+      const res = await fetch(url, {
+        method: "POST",
+        body: file,
+      });
+      const { storageId } = (await res.json()) as { storageId: Id<"_storage"> };
+      if (!storageId) throw new Error("Image upload failed");
+      setAttachment(storageId);
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload image");
+    } finally {
+      setIsUpLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await sendMessage({ directMessage, content });
+      await sendMessage({ directMessage, attachment, content });
       setContent("");
+      setAttachment(undefined);
+      setFile(undefined);
     } catch (error) {
       toast.error("Failed to send message");
     }
   };
 
   return (
-    <form className="flex items-center gap-2 p-4" onSubmit={handleSubmit}>
+    <>
+      <form className="flex items-end gap-2 p-4" onSubmit={handleSubmit}>
+        <Button
+          type="button"
+          size="icon"
+          onClick={() => {
+            fileInputRef.current?.click();
+          }}
+        >
+          <PlusIcon />
+          <span className="sr-only">Attach</span>
+        </Button>
+        <div className="flex flex-col flex-1 gap-2">
+          {file && <ImagePreview file={file} isUploading={isUploading} />}
+          <Input
+            placeholder="Message"
+            className="flex-1 bg-background"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={() => {
+              if (content.trim().length > 0) {
+                sendTypingIndicator({ directMessage });
+              }
+            }}
+          />
+        </div>
+        <Button size="icon">
+          <SendIcon />
+          <span className="sr-only">Send</span>
+        </Button>
+      </form>
       <input
-        placeholder="Message"
-        className="flex-1 bg-background"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        onKeyDown={(e) => {
-          if (content.length > 0) {
-            sendTypingIndicator({ directMessage });
-          }
-        }}
+        type="file"
+        className="hidden"
+        ref={fileInputRef}
+        onChange={handleImageUpload}
       />
-      <Button size="icon">
-        <SendIcon />
-        <span className="sr-only">Send</span>
-      </Button>
-    </form>
+    </>
+  );
+}
+
+function ImagePreview({
+  file,
+  isUploading,
+}: {
+  file: File;
+  isUploading: boolean;
+}) {
+  return (
+    <div className="relative size-40 overflow-hidden rounded border">
+      <img
+        src={URL.createObjectURL(file)}
+        width={300}
+        height={300}
+        alt="Attachment"
+        className="rounded border overflow-hidden"
+      />
+      {isUploading && (
+        <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+          <LoaderIcon className="animate-spin size-8 " />
+        </div>
+      )}
+    </div>
   );
 }
