@@ -5,7 +5,9 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: new URL(process.env.NEXT_PUBLIC_CONVEX_URL!).hostname,
+        hostname: process.env.NEXT_PUBLIC_CONVEX_URL
+          ? new URL(process.env.NEXT_PUBLIC_CONVEX_URL).hostname
+          : "*.convex.cloud",
       },
     ],
   },
