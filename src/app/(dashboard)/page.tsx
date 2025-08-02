@@ -7,7 +7,7 @@ import {
 } from "./_components/friends-list";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AddFriend } from "./_components/add-friends";
-import { Users, UserPlus } from "lucide-react";
+import { Users } from "lucide-react";
 
 export default function FriendsPage() {
   return (
@@ -28,13 +28,6 @@ export default function FriendsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-primary/25 transition-all duration-200"
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add Friend
-            </Button>
             <AddFriend />
           </div>
         </div>

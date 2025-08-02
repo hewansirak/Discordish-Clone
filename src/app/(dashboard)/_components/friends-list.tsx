@@ -10,6 +10,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function PendingFriendsList() {
   const friends = useQuery(api.functions.friend.listPending);
@@ -55,6 +57,18 @@ export function PendingFriendsList() {
 export function AcceptedFriendsList() {
   const friends = useQuery(api.functions.friend.listAccepted);
   const updateStatus = useMutation(api.functions.friend.updateStatus);
+  const createDM = useMutation(api.functions.dm.create);
+  const router = useRouter();
+
+  const handleStartDM = async (username: string) => {
+    try {
+      const dmId = await createDM({ username });
+      router.push(`/dms/${dmId}`);
+      toast.success(`Started DM with ${username}`);
+    } catch (error) {
+      toast.error("Failed to start DM");
+    }
+  };
 
   return (
     <div className="flex flex-col divide-y divide-border/30">
@@ -75,7 +89,7 @@ export function AcceptedFriendsList() {
             title="Start DM"
             icon={<MessageCircleIcon />}
             className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border-blue-500/30"
-            onClick={() => {}}
+            onClick={() => handleStartDM(friend.user.username)}
           />
           <IconButton
             title="Remove Friend"

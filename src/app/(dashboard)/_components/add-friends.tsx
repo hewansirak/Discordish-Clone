@@ -14,6 +14,7 @@ import { api } from "../../../../convex/_generated/api";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { useState } from "react";
+import { UserPlus } from "lucide-react";
 
 export function AddFriend() {
   const [open, setOpen] = useState(false);
@@ -37,7 +38,13 @@ export function AddFriend() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">Add Friend</Button>
+        <Button
+          size="sm"
+          className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-primary/25 transition-all duration-200"
+        >
+          <UserPlus className="h-4 w-4 mr-2" />
+          Add Friend
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
