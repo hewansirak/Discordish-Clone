@@ -1,50 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Discordish - Discord Clone
 
-## Getting Started
+A modern, real-time Discord clone built with Next.js, Convex, and Clerk authentication.
 
-First, run the development server:
+![Discordish Demo](demo.gif)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Real-time Messaging** - Direct messages with instant delivery
+- **Friend System** - Send requests, manage friends, see online status
+- **Modern UI** - Dark theme with smooth animations
+- **File Sharing** - Upload and share images in conversations
+- **Typing Indicators** - Real-time typing status
+- **Responsive Design** - Works on desktop and mobile
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Tech Stack
 
-## Learn More
+- **Frontend**: Next.js 15, TypeScript, Tailwind CSS
+- **Backend**: Convex (Real-time database)
+- **Authentication**: Clerk
+- **Icons**: Lucide React
+- **UI Components**: Radix UI
 
-To learn more about Next.js, take a look at the following resources:
+## 🚀 Quick Start
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Clone & Install**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```bash
+   git clone https://github.com/yourusername/discordish-clone.git
+   cd discordish-clone
+   npm install
+   ```
 
-## Deploy on Vercel
+2. **Environment Variables**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   ```env
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_key
+   CLERK_SECRET_KEY=your_secret
+   NEXT_PUBLIC_CONVEX_URL=your_convex_url
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3. **Run Development**
+   ```bash
+   npx convex dev
+   npm run dev
+   ```
+
+## 📱 Usage
+
+- **Sign up/login** with Clerk
+- **Add friends** using the "Add Friend" button
+- **Start DMs** by clicking "Start DM" on accepted friends
+- **Send messages** and share images in conversations
+
+
+**Built with Next.js, Convex & Clerk on December 2024**
 
 ## References
 
 Convex Tour Guide - https://docs.convex.dev/get-started
-
 Functions - https://docs.convex.dev/functions
-
 Database - https://docs.convex.dev/database
-
 Convex & Clerk - https://docs.convex.dev/auth/clerk
-
 Clerk Webhooks - https://clerk.com/docs/integrations/webhooks/sync-data
-
 Vercel Deployment - https://docs.convex.dev/production/hosting/vercel
