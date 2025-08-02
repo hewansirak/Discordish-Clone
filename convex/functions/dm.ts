@@ -9,9 +9,14 @@ export const list = authenticatedQuery({
       .query("directMessageMembers")
       .withIndex("by_user", (q) => q.eq("user", ctx.user._id))
       .collect();
-    return await Promise.all(
+
+    const results = await Promise.allSettled(
       directMessages.map((dm) => getDirectMessage(ctx, dm.directMessage))
     );
+
+    return results
+      .filter((res) => res.status === "fulfilled")
+      .map((res) => (res as PromiseFulfilledResult<any>).value);
   },
 });
 

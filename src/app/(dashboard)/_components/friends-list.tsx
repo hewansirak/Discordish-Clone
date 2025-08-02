@@ -10,13 +10,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function PendingFriendsList() {
   const friends = useQuery(api.functions.friend.listPending);
   const updateStatus = useMutation(api.functions.friend.updateStatus);
 
   return (
-    <div className="flex flex-col divide-y">
+    <div className="flex flex-col divide-y divide-border/30">
       <h2 className="text-xs font-medium text-muted-foreground p-2.5">
         Pending Friends
       </h2>
@@ -28,11 +30,12 @@ export function PendingFriendsList() {
           key={index}
           username={friend.user.username}
           image={friend.user.image}
+          status="pending"
         >
           <IconButton
             title="Accept"
             icon={<CheckIcon />}
-            className=" bg-green-100"
+            className="bg-green-500/20 hover:bg-green-500/30 text-green-400 border-green-500/30"
             onClick={() => {
               updateStatus({ id: friend._id, status: "accepted" });
             }}
@@ -40,7 +43,7 @@ export function PendingFriendsList() {
           <IconButton
             title="Reject"
             icon={<XIcon />}
-            className=" bg-red-100"
+            className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/30"
             onClick={() => {
               updateStatus({ id: friend._id, status: "rejected" });
             }}
@@ -54,9 +57,21 @@ export function PendingFriendsList() {
 export function AcceptedFriendsList() {
   const friends = useQuery(api.functions.friend.listAccepted);
   const updateStatus = useMutation(api.functions.friend.updateStatus);
+  const createDM = useMutation(api.functions.dm.create);
+  const router = useRouter();
+
+  const handleStartDM = async (username: string) => {
+    try {
+      const dmId = await createDM({ username });
+      router.push(`/dms/${dmId}`);
+      toast.success(`Started DM with ${username}`);
+    } catch (error) {
+      toast.error("Failed to start DM");
+    }
+  };
 
   return (
-    <div className="flex flex-col divide-y">
+    <div className="flex flex-col divide-y divide-border/30">
       <h2 className="text-xs font-medium text-muted-foreground p-2.5">
         Accepted Friends
       </h2>
@@ -68,17 +83,18 @@ export function AcceptedFriendsList() {
           key={index}
           username={friend.user.username}
           image={friend.user.image}
+          status="online"
         >
           <IconButton
             title="Start DM"
             icon={<MessageCircleIcon />}
-            className=" bg-blue-100"
-            onClick={() => {}}
+            className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border-blue-500/30"
+            onClick={() => handleStartDM(friend.user.username)}
           />
           <IconButton
             title="Remove Friend"
             icon={<XIcon />}
-            className=" bg-red-100"
+            className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/30"
             onClick={() => {
               updateStatus({ id: friend._id, status: "rejected" });
             }}
@@ -91,7 +107,7 @@ export function AcceptedFriendsList() {
 
 function FriendsListEmpty({ children }: { children: React.ReactNode }) {
   return (
-    <div className="p-4 bg-muted/50 text-center text-sm text-muted-foreground">
+    <div className="p-4 bg-muted/30 text-center text-sm text-muted-foreground rounded-lg border border-border/30">
       {children}
     </div>
   );
@@ -112,7 +128,10 @@ function IconButton({
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          className={cn("rounded-full", className)}
+          className={cn(
+            "rounded-full transition-all duration-200 hover:scale-105",
+            className
+          )}
           variant="outline"
           size="icon"
           onClick={onClick}
@@ -130,21 +149,44 @@ const FriendItem = ({
   username,
   image,
   children,
+  status = "offline",
 }: {
   username: string;
   image: string;
   children?: React.ReactNode;
+  status?: "online" | "offline" | "pending";
 }) => {
+  const statusColors = {
+    online: "bg-green-400 shadow-green-400/50",
+    offline: "bg-gray-400 shadow-gray-400/50",
+    pending: "bg-yellow-400 shadow-yellow-400/50",
+  };
+
   return (
-    <div className="flex items-center justify-between gap-2.5 p-2.5">
-      <div className="flex items-center gap-2.5">
-        <Avatar className="size-9 border">
-          <AvatarImage src={image} />
-          <AvatarFallback />
-        </Avatar>
-        <p className="text-sm font-medium">{username}</p>
+    <div className="group card-hover flex items-center justify-between gap-3 p-3 rounded-lg bg-card/50 border border-border/30">
+      <div className="flex items-center gap-3">
+        <div className="relative">
+          <Avatar className="size-10 border-2 border-border/50">
+            <AvatarImage src={image} className="object-cover" />
+            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-foreground font-semibold">
+              {username[0]?.toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div
+            className={cn(
+              "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card shadow-sm",
+              statusColors[status]
+            )}
+          />
+        </div>
+        <div>
+          <p className="font-medium text-foreground">{username}</p>
+          <p className="text-xs text-muted-foreground capitalize">{status}</p>
+        </div>
       </div>
-      <div className="flex items-center gap-1">{children}</div>
+      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {children}
+      </div>
     </div>
   );
 };
