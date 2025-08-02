@@ -10,10 +10,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { LoaderIcon, MessageCircleIcon, MoreVerticalIcon, PlusIcon, SendIcon } from "lucide-react";
-import { TrashIcon } from "@radix-ui/react-icons";
+import {
+  LoaderIcon,
+  MessageCircleIcon,
+  MoreVerticalIcon,
+  PlusIcon,
+  SendIcon,
+  Trash2,
+} from "lucide-react";
 import { use, useRef, useState } from "react";
-import { Doc, Id } from "../../../../../convex/_generated/dataModel";
+import { Id } from "../../../../../convex/_generated/dataModel";
 import { FunctionReturnType } from "convex/server";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -69,7 +75,7 @@ export default function MessagePage({
           </div>
         </div>
       </header>
-      
+
       <ScrollArea className="flex-1 px-4">
         <div className="py-4 space-y-4">
           {messages?.length === 0 ? (
@@ -90,7 +96,7 @@ export default function MessagePage({
         </div>
         <TypingIndicator directMessage={id} />
       </ScrollArea>
-      
+
       <div className="border-t border-border/50 bg-background/95 backdrop-blur-sm">
         <MessageInput directMessage={id} />
       </div>
@@ -112,11 +118,22 @@ function TypingIndicator({
   return (
     <div className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground">
       <div className="flex gap-1">
-        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        <div
+          className="w-2 h-2 bg-primary rounded-full animate-bounce"
+          style={{ animationDelay: "0ms" }}
+        />
+        <div
+          className="w-2 h-2 bg-primary rounded-full animate-bounce"
+          style={{ animationDelay: "150ms" }}
+        />
+        <div
+          className="w-2 h-2 bg-primary rounded-full animate-bounce"
+          style={{ animationDelay: "300ms" }}
+        />
       </div>
-      <span>{usernames.join(", ")} {usernames.length === 1 ? 'is' : 'are'} typing...</span>
+      <span>
+        {usernames.join(", ")} {usernames.length === 1 ? "is" : "are"} typing...
+      </span>
     </div>
   );
 }
@@ -144,18 +161,18 @@ function MessageItem({ message }: { message: Message }) {
           </p>
           <p className="text-xs text-muted-foreground">
             {new Date(message._creationTime).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit'
+              hour: "2-digit",
+              minute: "2-digit",
             })}
           </p>
         </div>
-        
+
         {message.content && (
           <p className="text-sm text-foreground leading-relaxed break-words">
             {message.content}
           </p>
         )}
-        
+
         {message.attachment && (
           <div className="mt-2">
             <img
@@ -168,7 +185,7 @@ function MessageItem({ message }: { message: Message }) {
           </div>
         )}
       </div>
-      
+
       <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         <MessageActions message={message} />
       </div>
@@ -186,7 +203,11 @@ function MessageActions({ message }: { message: Message }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted/50">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full hover:bg-muted/50"
+        >
           <MoreVerticalIcon className="size-4 text-muted-foreground" />
           <span className="sr-only">Message Actions</span>
         </Button>
@@ -196,7 +217,7 @@ function MessageActions({ message }: { message: Message }) {
           className="text-destructive hover:text-destructive hover:bg-destructive/10 flex items-center gap-2"
           onClick={() => removeMutation({ id: message._id })}
         >
-          <TrashIcon className="w-4 h-4" />
+          <Trash2 className="w-4 h-4" />
           Delete Message
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -260,7 +281,7 @@ function MessageInput({
       <form className="p-4" onSubmit={handleSubmit}>
         <div className="flex flex-col gap-3">
           {file && <ImagePreview file={file} isUploading={isUploading} />}
-          
+
           <div className="flex items-end gap-3 bg-card/50 border border-border/50 rounded-xl p-3">
             <Button
               type="button"
@@ -272,14 +293,14 @@ function MessageInput({
               <PlusIcon className="w-5 h-5" />
               <span className="sr-only">Attach file</span>
             </Button>
-            
+
             <Input
               placeholder="Type a message..."
               className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground placeholder:text-muted-foreground"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   handleSubmit(e);
                 }
@@ -288,7 +309,7 @@ function MessageInput({
                 }
               }}
             />
-            
+
             <Button
               type="submit"
               size="icon"
@@ -301,7 +322,7 @@ function MessageInput({
           </div>
         </div>
       </form>
-      
+
       <input
         type="file"
         accept="image/*"
