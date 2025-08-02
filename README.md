@@ -2,7 +2,7 @@
 
 A modern, real-time Discord clone built with Next.js, Convex, and Clerk authentication.
 
-![Discordish Demo](demo.gif)
+![Discordish Demo](demo.mp4)
 
 
 ## ✨ Features
@@ -58,9 +58,9 @@ A modern, real-time Discord clone built with Next.js, Convex, and Clerk authenti
 
 ## References
 
-Convex Tour Guide - https://docs.convex.dev/get-started
-Functions - https://docs.convex.dev/functions
-Database - https://docs.convex.dev/database
-Convex & Clerk - https://docs.convex.dev/auth/clerk
-Clerk Webhooks - https://clerk.com/docs/integrations/webhooks/sync-data
-Vercel Deployment - https://docs.convex.dev/production/hosting/vercel
+- Convex Tour Guide - https://docs.convex.dev/get-started
+- Functions - https://docs.convex.dev/functions
+- Database - https://docs.convex.dev/database
+- Convex & Clerk - https://docs.convex.dev/auth/clerk
+- Clerk Webhooks - https://clerk.com/docs/integrations/webhooks/sync-data
+- Vercel Deployment - https://docs.convex.dev/production/hosting/vercel
