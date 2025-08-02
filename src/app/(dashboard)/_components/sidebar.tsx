@@ -5,7 +5,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupAction,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
@@ -18,15 +17,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PlusIcon, User2Icon, MessageCircle, Settings, LogOut, Hash } from "lucide-react";
-import Link from "next/link";
-import { api } from "../../../../convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { api } from "../../../../convex/_generated/api";
 import { useQuery } from "convex/react";
-import { SignOutButton } from "@clerk/nextjs";
+import { Hash, User2Icon, Settings, LogOut } from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NewDirectMessage } from "./new-direct-message";
 import { cn } from "@/lib/utils";
+import { SignOutButton } from "@clerk/nextjs";
 
 export function DashboardSidebar() {
   const user = useQuery(api.functions.user.get);

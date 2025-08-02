@@ -24,6 +24,7 @@ import { FunctionReturnType } from "convex/server";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import Image from "next/image";
 
 export default function MessagePage({
   params,
@@ -175,7 +176,7 @@ function MessageItem({ message }: { message: Message }) {
 
         {message.attachment && (
           <div className="mt-2">
-            <img
+            <Image
               src={message.attachment}
               width={300}
               height={300}
@@ -271,7 +272,7 @@ function MessageInput({
       setContent("");
       setAttachment(undefined);
       setFile(undefined);
-    } catch (error) {
+    } catch {
       toast.error("Failed to send message");
     }
   };
@@ -343,9 +344,11 @@ function ImagePreview({
 }) {
   return (
     <div className="relative w-40 h-40 overflow-hidden rounded-lg border border-border/50 bg-card/50">
-      <img
+      <Image
         src={URL.createObjectURL(file)}
         alt="Attachment preview"
+        width={160}
+        height={160}
         className="w-full h-full object-cover"
       />
       {isUploading && (

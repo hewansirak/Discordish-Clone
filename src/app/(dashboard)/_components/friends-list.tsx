@@ -64,7 +64,7 @@ export function AcceptedFriendsList() {
     try {
       const dmId = await createDM({ username });
       router.push(`/dms/${dmId}`);
-    } catch (error) {
+    } catch {
       toast.error("Failed to start DM");
     }
   };
