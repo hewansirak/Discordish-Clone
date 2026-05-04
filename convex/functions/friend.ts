@@ -69,8 +69,14 @@ export const updateStatus = authenticatedMutation({
     if (!friend) {
       throw new Error("Friend not found");
     }
-    if (friend.user1 !== ctx.user._id && friend.user2 !== ctx.user._id) {
+    const isParticipant =
+      friend.user1 === ctx.user._id || friend.user2 === ctx.user._id;
+    if (!isParticipant) {
       throw new Error("Unauthorized");
+    }
+    // Only the person who received a request may accept or reject it.
+    if (friend.status === "pending" && friend.user2 !== ctx.user._id) {
+      throw new Error("Only the recipient can answer a friend request");
     }
     await ctx.db.patch(id, { status });
   },
