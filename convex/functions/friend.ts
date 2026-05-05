@@ -50,6 +50,32 @@ export const friendRequest = authenticatedMutation({
     } else if (user._id === ctx.user._id) {
       throw new Error("Cannot add yourself");
     }
+
+    const existing = await getFriendships(ctx, ctx.user._id, user._id);
+    if (existing.some((f) => f.status === "accepted")) {
+      throw new Error("You are already friends");
+    }
+    if (existing.some((f) => f.status === "pending" && f.user1 === ctx.user._id)) {
+      throw new Error("Friend request already sent");
+    }
+    // They already asked us: treat our request as an acceptance.
+    const incoming = existing.find(
+      (f) => f.status === "pending" && f.user2 === ctx.user._id
+    );
+    if (incoming) {
+      await ctx.db.patch(incoming._id, { status: "accepted" });
+      return;
+    }
+    // A previously rejected pair can try again; reuse the row instead of duplicating it.
+    const rejected = existing.find((f) => f.status === "rejected");
+    if (rejected) {
+      await ctx.db.patch(rejected._id, {
+        user1: ctx.user._id,
+        user2: user._id,
+        status: "pending",
+      });
+      return;
+    }
     await ctx.db.insert("friends", {
       user1: ctx.user._id,
       user2: user._id,
@@ -57,6 +83,33 @@ export const friendRequest = authenticatedMutation({
     });
   },
 });
+
+/** Every friendship row between two users, in either direction. */
+export const getFriendships = async (
+  ctx: QueryCtx,
+  a: Id<"users">,
+  b: Id<"users">
+) => {
+  const [forward, backward] = await Promise.all([
+    ctx.db
+      .query("friends")
+      .withIndex("by_user1_status", (q) => q.eq("user1", a))
+      .filter((q) => q.eq(q.field("user2"), b))
+      .collect(),
+    ctx.db
+      .query("friends")
+      .withIndex("by_user2_status", (q) => q.eq("user2", a))
+      .filter((q) => q.eq(q.field("user1"), b))
+      .collect(),
+  ]);
+  return [...forward, ...backward];
+};
+
+export const areFriends = async (
+  ctx: QueryCtx,
+  a: Id<"users">,
+  b: Id<"users">
+) => (await getFriendships(ctx, a, b)).some((f) => f.status === "accepted");
 
 
 export const updateStatus = authenticatedMutation({

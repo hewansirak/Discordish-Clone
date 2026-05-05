@@ -42,6 +42,29 @@ describe("friend requests", () => {
     ).rejects.toThrow(/unauthorized/i);
   });
 
+  it("rejects duplicate requests and requests to existing friends", async () => {
+    const { alice, bob } = await setup();
+    await alice.as.mutation(api.functions.friend.friendRequest, { username: "bob" });
+    await expect(
+      alice.as.mutation(api.functions.friend.friendRequest, { username: "bob" })
+    ).rejects.toThrow(/already/i);
+
+    const [pending] = await bob.as.query(api.functions.friend.listPending, {});
+    await bob.as.mutation(api.functions.friend.updateStatus, { id: pending._id, status: "accepted" });
+    await expect(
+      bob.as.mutation(api.functions.friend.friendRequest, { username: "alice" })
+    ).rejects.toThrow(/already friends/i);
+  });
+
+  it("auto-accepts when both users request each other", async () => {
+    const { alice, bob } = await setup();
+    await alice.as.mutation(api.functions.friend.friendRequest, { username: "bob" });
+    await bob.as.mutation(api.functions.friend.friendRequest, { username: "alice" });
+    const friends = await bob.as.query(api.functions.friend.listAccepted, {});
+    expect(friends).toHaveLength(1);
+    expect(await bob.as.query(api.functions.friend.listPending, {})).toHaveLength(0);
+  });
+
   it("refuses to friend yourself or an unknown user", async () => {
     const { alice } = await setup();
     await expect(
