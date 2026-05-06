@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { authenticatedMutation, authenticatedQuery } from "./helpers";
 import { QueryCtx } from "../_generated/server";
 import { Doc, Id } from "../_generated/dataModel";
+import { areFriends } from "./friend";
 
 export const list = authenticatedQuery({
   handler: async (ctx) => {
@@ -49,6 +50,12 @@ export const create = authenticatedMutation({
       .first();
     if (!user) {
       throw new Error("User does not exist.");
+    }
+    if (user._id === ctx.user._id) {
+      throw new Error("You cannot message yourself.");
+    }
+    if (!(await areFriends(ctx, ctx.user._id, user._id))) {
+      throw new Error("You can only message people you are friends with.");
     }
 
     const directMessagesForCurrentUser = await ctx.db
