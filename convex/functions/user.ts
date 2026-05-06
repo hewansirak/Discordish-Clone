@@ -100,8 +100,10 @@ export const upsert = internalMutation({
         clerkId: args.clerkId,
       });
 
-      // Create sample friends and conversations for new users
-      await createSampleDataForNewUser(ctx, userId);
+      // Demo content is opt-in so real deployments don't fill up with fake people.
+      if (process.env.SEED_DEMO_DATA === "true") {
+        await createSampleDataForNewUser(ctx, userId);
+      }
 
       return userId;
     }
