@@ -1,4 +1,5 @@
 import { convexTest } from "convex-test";
+import { api } from "../../convex/_generated/api";
 import schema from "../../convex/schema";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
@@ -19,3 +20,10 @@ export async function makeUser(t: TestConvex, username: string) {
 }
 
 export type TestUser = Awaited<ReturnType<typeof makeUser>>;
+
+/** Send a friend request from `a` to `b` and have `b` accept it. */
+export async function befriend(a: TestUser, b: TestUser) {
+  await a.as.mutation(api.functions.friend.friendRequest, { username: b.username });
+  const [pending] = await b.as.query(api.functions.friend.listPending, {});
+  await b.as.mutation(api.functions.friend.updateStatus, { id: pending._id, status: "accepted" });
+}
