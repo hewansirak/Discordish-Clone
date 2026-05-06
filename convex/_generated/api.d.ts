@@ -20,6 +20,7 @@ import type * as functions_message from "../functions/message.js";
 import type * as functions_typing from "../functions/typing.js";
 import type * as functions_user from "../functions/user.js";
 import type * as http from "../http.js";
+import type * as lib_username from "../lib/username.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   "functions/typing": typeof functions_typing;
   "functions/user": typeof functions_user;
   http: typeof http;
+  "lib/username": typeof lib_username;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
