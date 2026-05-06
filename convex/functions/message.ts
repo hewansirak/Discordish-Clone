@@ -3,6 +3,20 @@ import { v } from "convex/values";
 import { authenticatedMutation, authenticatedQuery } from "./helpers";
 import { internal } from "../_generated/api";
 
+export const MAX_MESSAGE_LENGTH = 2000;
+
+/** Trim the text and enforce length limits. A message needs text or an attachment. */
+export function validateContent(raw: string, hasAttachment: boolean): string {
+  const content = raw.trim();
+  if (!content && !hasAttachment) {
+    throw new Error("Message cannot be empty.");
+  }
+  if (content.length > MAX_MESSAGE_LENGTH) {
+    throw new Error(`Message is too long (max ${MAX_MESSAGE_LENGTH} characters).`);
+  }
+  return content;
+}
+
 export const list = authenticatedQuery({
   args: {
     directMessage: v.id("directMessages"),
@@ -45,7 +59,8 @@ export const create = authenticatedMutation({
     directMessage: v.id("directMessages"),
     attachment: v.optional(v.id("_storage")),
   },
-  handler: async (ctx, { content, directMessage, attachment }) => {
+  handler: async (ctx, { content: rawContent, directMessage, attachment }) => {
+    const content = validateContent(rawContent, Boolean(attachment));
     const member = await ctx.db
       .query("directMessageMembers")
       .withIndex("by_directMessage_user", (q) =>
