@@ -4,7 +4,8 @@ import {
   customQuery,
 } from "convex-helpers/server/customFunctions";
 import { getCurrentUser } from "./user";
-import { mutation, query } from "../_generated/server";
+import { mutation, query, QueryCtx } from "../_generated/server";
+import { Doc, Id } from "../_generated/dataModel";
 
 export const authenticatedQuery = customQuery(
   query,
@@ -27,3 +28,21 @@ export const authenticatedMutation = customMutation(
     return { user };
   })
 );
+
+/** Throws unless `user` is a member of the direct message. Returns the membership row. */
+export async function requireDmMember(
+  ctx: QueryCtx,
+  user: Doc<"users">,
+  directMessage: Id<"directMessages">
+) {
+  const member = await ctx.db
+    .query("directMessageMembers")
+    .withIndex("by_directMessage_user", (q) =>
+      q.eq("directMessage", directMessage).eq("user", user._id)
+    )
+    .first();
+  if (!member) {
+    throw new Error("You are not a member of this direct message.");
+  }
+  return member;
+}

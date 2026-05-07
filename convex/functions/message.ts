@@ -1,6 +1,10 @@
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { authenticatedMutation, authenticatedQuery } from "./helpers";
+import {
+  authenticatedMutation,
+  authenticatedQuery,
+  requireDmMember,
+} from "./helpers";
 import { internal } from "../_generated/api";
 
 export const MAX_MESSAGE_LENGTH = 2000;
@@ -22,15 +26,7 @@ export const list = authenticatedQuery({
     directMessage: v.id("directMessages"),
   },
   handler: async (ctx, { directMessage }) => {
-    const member = await ctx.db
-      .query("directMessageMembers")
-      .withIndex("by_directMessage_user", (q) =>
-        q.eq("directMessage", directMessage).eq("user", ctx.user._id)
-      )
-      .first();
-    if (!member) {
-      throw new Error("You are not a member of this direct message.");
-    }
+    await requireDmMember(ctx, ctx.user, directMessage);
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_directMessage", (q) =>
@@ -61,15 +57,7 @@ export const create = authenticatedMutation({
   },
   handler: async (ctx, { content: rawContent, directMessage, attachment }) => {
     const content = validateContent(rawContent, Boolean(attachment));
-    const member = await ctx.db
-      .query("directMessageMembers")
-      .withIndex("by_directMessage_user", (q) =>
-        q.eq("directMessage", directMessage).eq("user", ctx.user._id)
-      )
-      .first();
-    if (!member) {
-      throw new Error("You are not a member of this direct message.");
-    }
+    await requireDmMember(ctx, ctx.user, directMessage);
     await ctx.db.insert("messages", {
       content,
       directMessage,

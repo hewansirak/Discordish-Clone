@@ -1,5 +1,9 @@
 import { v } from "convex/values";
-import { authenticatedMutation, authenticatedQuery } from "./helpers";
+import {
+  authenticatedMutation,
+  authenticatedQuery,
+  requireDmMember,
+} from "./helpers";
 import { QueryCtx } from "../_generated/server";
 import { Doc, Id } from "../_generated/dataModel";
 import { areFriends } from "./friend";
@@ -26,15 +30,7 @@ export const get = authenticatedQuery({
     id: v.id("directMessages"),
   },
   handler: async (ctx, { id }) => {
-    const member = await ctx.db
-      .query("directMessageMembers")
-      .withIndex("by_directMessage_user", (q) =>
-        q.eq("directMessage", id).eq("user", ctx.user._id)
-      )
-      .first();
-    if (!member) {
-      throw new Error("You are not a member of this direct message.");
-    }
+    await requireDmMember(ctx, ctx.user, id);
     return await getDirectMessage(ctx, id);
   },
 });
