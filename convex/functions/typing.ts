@@ -1,5 +1,9 @@
 import { v } from "convex/values";
-import { authenticatedMutation, authenticatedQuery } from "./helpers";
+import {
+  authenticatedMutation,
+  authenticatedQuery,
+  requireDmMember,
+} from "./helpers";
 import { internalMutation } from "../_generated/server";
 import { internal } from "../_generated/api";
 
@@ -8,12 +12,19 @@ export const list = authenticatedQuery({
     directMessage: v.id("directMessages"),
   },
   handler: async (ctx, { directMessage }) => {
+    await requireDmMember(ctx, ctx.user, directMessage);
+    const now = Date.now();
     const typingIndicators = await ctx.db
       .query("typingIndicators")
       .withIndex("by_directMessage", (q) =>
         q.eq("directMessage", directMessage)
       )
-      .filter((q) => q.neq(q.field("user"), ctx.user._id))
+      .filter((q) =>
+        q.and(
+          q.neq(q.field("user"), ctx.user._id),
+          q.gt(q.field("expiresAt"), now)
+        )
+      )
       .collect();
 
     return await Promise.all(
@@ -33,6 +44,7 @@ export const upsert = authenticatedMutation({
     directMessage: v.id("directMessages"),
   },
   handler: async (ctx, { directMessage }) => {
+    await requireDmMember(ctx, ctx.user, directMessage);
     const existing = await ctx.db
       .query("typingIndicators")
       .withIndex("by_user_directMessage", (q) =>
