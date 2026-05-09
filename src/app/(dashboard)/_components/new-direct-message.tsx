@@ -31,9 +31,9 @@ export function NewDirectMessage() {
       const id = await createDirectMessage({
         username: e.currentTarget.username.value,
       });
-      toast.success("Friend request sent");
+      toast.success("Conversation opened");
       setOpen(false);
-      router.push(`/dm/${id}`);
+      router.push(`/dms/${id}`);
     } catch (error) {
       toast.error("Failed to create direct message", {
         description:
