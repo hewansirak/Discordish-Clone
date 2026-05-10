@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { api } from "../../convex/_generated/api";
-import { makeUser, newTest } from "./helpers";
+import { befriend, makeUser, newTest } from "./helpers";
 
 async function setup() {
   const t = newTest();
@@ -78,5 +78,27 @@ describe("friend requests", () => {
   it("requires sign-in", async () => {
     const { t } = await setup();
     await expect(t.query(api.functions.friend.listAccepted, {})).rejects.toThrow(/unauthorized/i);
+  });
+
+  it("lists outgoing requests and lets the sender cancel one", async () => {
+    const { t, alice, bob } = await setup();
+    await alice.as.mutation(api.functions.friend.friendRequest, { username: "bob" });
+    const outgoing = await alice.as.query(api.functions.friend.listOutgoing, {});
+    expect(outgoing.map((f) => f.user.username)).toEqual(["bob"]);
+
+    await expect(
+      bob.as.mutation(api.functions.friend.remove, { id: outgoing[0]._id })
+    ).rejects.toThrow(/unauthorized/i);
+    await alice.as.mutation(api.functions.friend.remove, { id: outgoing[0]._id });
+    expect(await bob.as.query(api.functions.friend.listPending, {})).toHaveLength(0);
+    expect(await t.run((ctx) => ctx.db.query("friends").collect())).toHaveLength(0);
+  });
+
+  it("lets either friend remove an accepted friendship", async () => {
+    const { alice, bob } = await setup();
+    await befriend(alice, bob);
+    const [row] = await bob.as.query(api.functions.friend.listAccepted, {});
+    await bob.as.mutation(api.functions.friend.remove, { id: row._id });
+    expect(await alice.as.query(api.functions.friend.listAccepted, {})).toHaveLength(0);
   });
 });

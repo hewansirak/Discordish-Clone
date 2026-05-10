@@ -38,6 +38,39 @@ export const listAccepted = authenticatedQuery({
 });
 
 
+export const listOutgoing = authenticatedQuery({
+  handler: async (ctx) => {
+    const friends = await ctx.db
+      .query("friends")
+      .withIndex("by_user1_status", (q) =>
+        q.eq("user1", ctx.user._id).eq("status", "pending")
+      )
+      .collect();
+    return await mapWithUsers(ctx, friends, "user2");
+  },
+});
+
+/** Unfriend someone, or cancel a request you sent. */
+export const remove = authenticatedMutation({
+  args: { id: v.id("friends") },
+  handler: async (ctx, { id }) => {
+    const friend = await ctx.db.get(id);
+    if (!friend) {
+      throw new Error("Friend not found");
+    }
+    const isParticipant =
+      friend.user1 === ctx.user._id || friend.user2 === ctx.user._id;
+    const canRemove =
+      friend.status === "accepted" ||
+      (friend.status === "pending" && friend.user1 === ctx.user._id);
+    if (!isParticipant || !canRemove) {
+      throw new Error("Unauthorized");
+    }
+    await ctx.db.delete(id);
+  },
+});
+
+
 export const friendRequest = authenticatedMutation({
   args: { username: v.string() },
   handler: async (ctx, { username }) => {
