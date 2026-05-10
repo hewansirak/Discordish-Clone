@@ -240,6 +240,7 @@ function MessageInput({
   const [attachment, setAttachment] = useState<Id<"_storage">>();
   const [file, setFile] = useState<File>();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastTypingSent = useRef(0);
   const [isUploading, setIsUpLoading] = useState(false);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -305,7 +306,9 @@ function MessageInput({
                   e.preventDefault();
                   handleSubmit(e);
                 }
-                if (content.trim().length > 0) {
+                // The indicator lasts 5s, so refreshing every 2s is plenty.
+                if (content.trim().length > 0 && Date.now() - lastTypingSent.current > 2000) {
+                  lastTypingSent.current = Date.now();
                   sendTypingIndicator({ directMessage });
                 }
               }}
