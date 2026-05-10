@@ -18,7 +18,7 @@ import {
   SendIcon,
   Trash2,
 } from "lucide-react";
-import { use, useRef, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { FunctionReturnType } from "convex/server";
 import { Button } from "@/components/ui/button";
@@ -342,10 +342,14 @@ function ImagePreview({
   file: File;
   isUploading: boolean;
 }) {
+  // Create the preview URL once per file and release it afterwards.
+  const previewUrl = useMemo(() => URL.createObjectURL(file), [file]);
+  useEffect(() => () => URL.revokeObjectURL(previewUrl), [previewUrl]);
+
   return (
     <div className="relative w-40 h-40 overflow-hidden rounded-lg border border-border/50 bg-card/50">
       <Image
-        src={URL.createObjectURL(file)}
+        src={previewUrl}
         alt="Attachment preview"
         width={160}
         height={160}
