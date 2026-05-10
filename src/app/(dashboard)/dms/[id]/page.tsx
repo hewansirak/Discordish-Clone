@@ -39,6 +39,12 @@ export default function MessagePage({
   const directMessage = useQuery(api.functions.dm.get, {
     id,
   });
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const messageCount = messages?.length ?? 0;
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messageCount]);
 
   if (!directMessage) {
     return (
@@ -96,6 +102,7 @@ export default function MessagePage({
           )}
         </div>
         <TypingIndicator directMessage={id} />
+        <div ref={bottomRef} />
       </ScrollArea>
 
       <div className="border-t border-border/50 bg-background/95 backdrop-blur-sm">
