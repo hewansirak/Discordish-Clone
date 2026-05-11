@@ -56,7 +56,7 @@ export function PendingFriendsList() {
 
 export function AcceptedFriendsList() {
   const friends = useQuery(api.functions.friend.listAccepted);
-  const updateStatus = useMutation(api.functions.friend.updateStatus);
+  const removeFriend = useMutation(api.functions.friend.remove);
   const createDM = useMutation(api.functions.dm.create);
   const router = useRouter();
 
@@ -95,7 +95,7 @@ export function AcceptedFriendsList() {
             icon={<XIcon />}
             className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/30"
             onClick={() => {
-              updateStatus({ id: friend._id, status: "rejected" });
+              removeFriend({ id: friend._id }).catch(() => toast.error("Could not remove friend"));
             }}
           />
         </FriendItem>
