@@ -54,6 +54,37 @@ export function PendingFriendsList() {
   );
 }
 
+export function OutgoingFriendsList() {
+  const friends = useQuery(api.functions.friend.listOutgoing);
+  const cancel = useMutation(api.functions.friend.remove);
+
+  if (!friends || friends.length === 0) return null;
+  return (
+    <div className="flex flex-col divide-y divide-border/30">
+      <h2 className="text-xs font-medium text-muted-foreground p-2.5">
+        Sent Requests
+      </h2>
+      {friends.map((friend) => (
+        <FriendItem
+          key={friend._id}
+          username={friend.user.username}
+          image={friend.user.image}
+          status="pending"
+        >
+          <IconButton
+            title="Cancel request"
+            icon={<XIcon />}
+            className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/30"
+            onClick={() => {
+              cancel({ id: friend._id }).catch(() => toast.error("Could not cancel request"));
+            }}
+          />
+        </FriendItem>
+      ))}
+    </div>
+  );
+}
+
 export function AcceptedFriendsList() {
   const friends = useQuery(api.functions.friend.listAccepted);
   const removeFriend = useMutation(api.functions.friend.remove);

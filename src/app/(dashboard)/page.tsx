@@ -2,6 +2,7 @@
 
 import {
   PendingFriendsList,
+  OutgoingFriendsList,
   AcceptedFriendsList,
 } from "./_components/friends-list";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -37,6 +38,7 @@ export default function FriendsPage() {
           <TooltipProvider delayDuration={0}>
             <div className="space-y-6">
               <PendingFriendsList />
+              <OutgoingFriendsList />
               <AcceptedFriendsList />
             </div>
           </TooltipProvider>
