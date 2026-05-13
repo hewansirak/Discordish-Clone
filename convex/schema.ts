@@ -34,6 +34,10 @@ export default defineSchema({
     directMessage: v.id("directMessages"),
     attachment: v.optional(v.id("_storage")),
   }).index("by_directMessage", ["directMessage"]),
+  presence: defineTable({
+    user: v.id("users"),
+    lastSeen: v.number(),
+  }).index("by_user", ["user"]),
   typingIndicators: defineTable({
     user: v.id("users"),
     directMessage: v.id("directMessages"),
