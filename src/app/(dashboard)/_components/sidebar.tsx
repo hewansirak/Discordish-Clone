@@ -26,11 +26,14 @@ import { usePathname } from "next/navigation";
 import { NewDirectMessage } from "./new-direct-message";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "@clerk/nextjs";
+import { PresenceDot } from "@/components/presence-dot";
+import { useOnlineUsers } from "@/hooks/use-presence";
 
 export function DashboardSidebar() {
   const user = useQuery(api.functions.user.get);
   const directMessages = useQuery(api.functions.dm.list);
   const pathname = usePathname();
+  const online = useOnlineUsers(directMessages?.map((dm) => dm.user._id) ?? []);
 
   if (!user) return null;
   return (
@@ -92,7 +95,7 @@ export function DashboardSidebar() {
                               {directMessage.user.username[0]}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-sidebar-background" />
+                          <PresenceDot online={online.has(directMessage.user._id)} />
                         </div>
                         <span className="font-medium truncate">
                           {directMessage.user.username}
@@ -122,7 +125,7 @@ export function DashboardSidebar() {
                             {user.username[0]}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-sidebar-background" />
+                        <PresenceDot online />
                       </div>
                       <div className="flex-1 text-left">
                         <p className="font-medium text-foreground truncate">{user.username}</p>
