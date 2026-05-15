@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
+import { PresenceDot } from "@/components/presence-dot";
+import { useOnlineUsers } from "@/hooks/use-presence";
 
 export default function MessagePage({
   params,
@@ -39,6 +41,7 @@ export default function MessagePage({
   const directMessage = useQuery(api.functions.dm.get, {
     id,
   });
+  const online = useOnlineUsers(directMessage ? [directMessage.user._id] : []);
   const bottomRef = useRef<HTMLDivElement>(null);
   const messageCount = messages?.length ?? 0;
 
@@ -72,13 +75,15 @@ export default function MessagePage({
                 {directMessage.user.username?.[0]?.toUpperCase() ?? "G"}
               </AvatarFallback>
             </Avatar>
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-background" />
+            <PresenceDot online={online.has(directMessage.user._id)} />
           </div>
           <div>
             <h1 className="font-bold text-lg text-foreground">
               {directMessage.user.username || "Guest"}
             </h1>
-            <p className="text-sm text-muted-foreground">Online</p>
+            <p className="text-sm text-muted-foreground">
+              {online.has(directMessage.user._id) ? "Online" : "Offline"}
+            </p>
           </div>
         </div>
       </header>
