@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useOnlineUsers } from "@/hooks/use-presence";
 
 export function PendingFriendsList() {
   const friends = useQuery(api.functions.friend.listPending);
@@ -90,6 +91,7 @@ export function AcceptedFriendsList() {
   const removeFriend = useMutation(api.functions.friend.remove);
   const createDM = useMutation(api.functions.dm.create);
   const router = useRouter();
+  const online = useOnlineUsers(friends?.map((f) => f.user._id) ?? []);
 
   const handleStartDM = async (username: string) => {
     try {
@@ -113,7 +115,7 @@ export function AcceptedFriendsList() {
           key={index}
           username={friend.user.username}
           image={friend.user.image}
-          status="online"
+          status={online.has(friend.user._id) ? "online" : "offline"}
         >
           <IconButton
             title="Start DM"
