@@ -24,6 +24,8 @@ export default defineSchema({
   directMessageMembers: defineTable({
     directMessage: v.id("directMessages"),
     user: v.id("users"),
+    // Messages from others after this time count as unread.
+    lastReadAt: v.optional(v.number()),
   })
     .index("by_directMessage", ["directMessage"])
     .index("by_user", ["user"])
