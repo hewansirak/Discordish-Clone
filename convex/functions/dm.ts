@@ -16,12 +16,48 @@ export const list = authenticatedQuery({
       .collect();
 
     const results = await Promise.allSettled(
-      directMessages.map((dm) => getDirectMessage(ctx, dm.directMessage))
+      directMessages.map(async (member) => ({
+        ...(await getDirectMessage(ctx, member.directMessage)),
+        unread: await countUnread(
+          ctx,
+          member.directMessage,
+          ctx.user._id,
+          member.lastReadAt ?? 0
+        ),
+      }))
     );
 
     return results
       .filter((res) => res.status === "fulfilled")
       .map((res) => (res as PromiseFulfilledResult<any>).value);
+  },
+});
+
+const UNREAD_CAP = 99;
+
+/** Messages from other people after `since`, capped so the query stays cheap. */
+const countUnread = async (
+  ctx: QueryCtx,
+  directMessage: Id<"directMessages">,
+  me: Id<"users">,
+  since: number
+) => {
+  const recent = await ctx.db
+    .query("messages")
+    .withIndex("by_directMessage", (q) =>
+      q.eq("directMessage", directMessage).gt("_creationTime", since)
+    )
+    .filter((q) => q.neq(q.field("sender"), me))
+    .take(UNREAD_CAP + 1);
+  return Math.min(recent.length, UNREAD_CAP);
+};
+
+/** Mark everything in the conversation as read for the current user. */
+export const markRead = authenticatedMutation({
+  args: { id: v.id("directMessages") },
+  handler: async (ctx, { id }) => {
+    const member = await requireDmMember(ctx, ctx.user, id);
+    await ctx.db.patch(member._id, { lastReadAt: Date.now() });
   },
 });
 
