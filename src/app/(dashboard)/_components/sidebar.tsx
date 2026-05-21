@@ -97,9 +97,17 @@ export function DashboardSidebar() {
                           </Avatar>
                           <PresenceDot online={online.has(directMessage.user._id)} />
                         </div>
-                        <span className="font-medium truncate">
+                        <span className={cn("font-medium truncate flex-1", directMessage.unread > 0 && "text-foreground font-bold")}>
                           {directMessage.user.username}
                         </span>
+                        {directMessage.unread > 0 && (
+                          <span
+                            aria-label={`${directMessage.unread} unread messages`}
+                            className="ml-auto rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground"
+                          >
+                            {directMessage.unread >= 99 ? "99+" : directMessage.unread}
+                          </span>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
