@@ -29,6 +29,7 @@ export default function MessagePage({
   const sendMessage = useMutation(api.functions.message.create);
   const removeMessage = useMutation(api.functions.message.remove);
   const sendTyping = useMutation(api.functions.typing.upsert);
+  const markRead = useMutation(api.functions.dm.markRead);
   const generateUploadUrl = useMutation(api.functions.message.generateUploadUrl);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -37,6 +38,13 @@ export default function MessagePage({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messageCount]);
+
+  // Anything that arrives while this conversation is open counts as read.
+  useEffect(() => {
+    if (messageCount > 0 && document.visibilityState === "visible") {
+      markRead({ id }).catch(() => {});
+    }
+  }, [id, messageCount, markRead]);
 
   if (!directMessage) {
     return (
