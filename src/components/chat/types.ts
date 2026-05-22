@@ -11,4 +11,6 @@ export type ChatMessage = {
   content: string;
   sender: ChatUser | null;
   attachment?: string | null;
+  /** Set when the author changed the text after sending. */
+  editedAt?: number;
 };
