@@ -35,6 +35,7 @@ export default defineSchema({
     content: v.string(),
     directMessage: v.id("directMessages"),
     attachment: v.optional(v.id("_storage")),
+    editedAt: v.optional(v.number()),
   }).index("by_directMessage", ["directMessage"]),
   presence: defineTable({
     user: v.id("users"),
