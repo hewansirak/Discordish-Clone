@@ -1,4 +1,3 @@
-import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import {
   authenticatedMutation,
@@ -6,6 +5,8 @@ import {
   requireDmMember,
 } from "./helpers";
 import { internal } from "../_generated/api";
+import { Doc } from "../_generated/dataModel";
+import { QueryCtx } from "../_generated/server";
 
 export const MAX_MESSAGE_LENGTH = 2000;
 
@@ -21,6 +22,15 @@ export function validateContent(raw: string, hasAttachment: boolean): string {
   return content;
 }
 
+/** Add the sender and a public attachment URL to a stored message. */
+export async function toClientMessage(ctx: QueryCtx, message: Doc<"messages">) {
+  const sender = await ctx.db.get(message.sender);
+  const attachment = message.attachment
+    ? await ctx.storage.getUrl(message.attachment)
+    : undefined;
+  return { ...message, attachment, sender };
+}
+
 export const list = authenticatedQuery({
   args: {
     directMessage: v.id("directMessages"),
@@ -33,19 +43,7 @@ export const list = authenticatedQuery({
         q.eq("directMessage", directMessage)
       )
       .collect();
-    return await Promise.all(
-      messages.map(async (message) => {
-        const sender = await ctx.db.get(message.sender);
-        const attachment = message.attachment
-          ? await ctx.storage.getUrl(message.attachment)
-          : undefined;
-        return {
-          ...message,
-          attachment,
-          sender,
-        };
-      })
-    );
+    return await Promise.all(messages.map((m) => toClientMessage(ctx, m)));
   },
 });
 
