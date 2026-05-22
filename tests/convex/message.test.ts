@@ -72,4 +72,32 @@ describe("messages", () => {
     await alice.as.mutation(api.functions.message.remove, { id: message._id });
     expect(await alice.as.query(api.functions.message.list, { directMessage: dm })).toHaveLength(0);
   });
+
+  it("lets the sender edit a message and marks it as edited", async () => {
+    const { alice, bob, dm } = await setup();
+    await alice.as.mutation(api.functions.message.create, { directMessage: dm, content: "helo" });
+    const [message] = await alice.as.query(api.functions.message.list, { directMessage: dm });
+    expect(message.editedAt).toBeUndefined();
+
+    await expect(
+      bob.as.mutation(api.functions.message.edit, { id: message._id, content: "hacked" })
+    ).rejects.toThrow(/not the sender/i);
+    await expect(
+      alice.as.mutation(api.functions.message.edit, { id: message._id, content: "  " })
+    ).rejects.toThrow(/empty/i);
+
+    await alice.as.mutation(api.functions.message.edit, { id: message._id, content: "hello" });
+    const [edited] = await bob.as.query(api.functions.message.list, { directMessage: dm });
+    expect(edited.content).toBe("hello");
+    expect(edited.editedAt).toBeTypeOf("number");
+  });
+
+  it("does not mark a message edited when the text is unchanged", async () => {
+    const { alice, dm } = await setup();
+    await alice.as.mutation(api.functions.message.create, { directMessage: dm, content: "same" });
+    const [message] = await alice.as.query(api.functions.message.list, { directMessage: dm });
+    await alice.as.mutation(api.functions.message.edit, { id: message._id, content: "same" });
+    const [after] = await alice.as.query(api.functions.message.list, { directMessage: dm });
+    expect(after.editedAt).toBeUndefined();
+  });
 });

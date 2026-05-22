@@ -69,6 +69,24 @@ export const create = authenticatedMutation({
   },
 });
 
+export const edit = authenticatedMutation({
+  args: {
+    id: v.id("messages"),
+    content: v.string(),
+  },
+  handler: async (ctx, { id, content: rawContent }) => {
+    const message = await ctx.db.get(id);
+    if (!message) {
+      throw new Error("Message does not exist.");
+    } else if (message.sender !== ctx.user._id) {
+      throw new Error("You are not the sender of this message.");
+    }
+    const content = validateContent(rawContent, Boolean(message.attachment));
+    if (content === message.content) return;
+    await ctx.db.patch(id, { content, editedAt: Date.now() });
+  },
+});
+
 export const remove = authenticatedMutation({
   args: {
     id: v.id("messages"),
