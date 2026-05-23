@@ -8,13 +8,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVerticalIcon, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MoreVerticalIcon, PencilIcon, Trash2 } from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
+import { toast } from "sonner";
 import type { ChatMessage } from "./types";
 
 export type MessageActions = {
   /** Provide to show "Delete" in the message menu. */
   onDelete?: (message: ChatMessage) => void;
+  /** Provide to show "Edit" in the message menu. */
+  onEdit?: (message: ChatMessage, content: string) => Promise<void>;
 };
 
 export function MessageItem({
@@ -26,7 +31,22 @@ export function MessageItem({
   isOwn: boolean;
   actions: MessageActions;
 }) {
-  const hasMenu = Boolean(actions.onDelete);
+  const hasMenu = Boolean(actions.onDelete || actions.onEdit);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(message.content);
+
+  const saveEdit = async () => {
+    const next = draft.trim();
+    if (next === message.content) return setEditing(false);
+    try {
+      await actions.onEdit?.(message, next);
+      setEditing(false);
+    } catch (error) {
+      toast.error("Could not edit message", {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    }
+  };
 
   return (
     <div className="message-hover group flex items-start gap-3 px-4 py-3 rounded-lg">
@@ -54,10 +74,29 @@ export function MessageItem({
           </p>
         </div>
 
-        {message.content && (
-          <p className="text-sm text-foreground leading-relaxed break-words whitespace-pre-wrap">
-            {message.content}
-          </p>
+        {editing ? (
+          <div className="flex flex-col gap-1">
+            <Input
+              autoFocus
+              value={draft}
+              maxLength={2000}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void saveEdit();
+                if (e.key === "Escape") setEditing(false);
+              }}
+            />
+            <p className="text-xs text-muted-foreground">Enter to save · Esc to cancel</p>
+          </div>
+        ) : (
+          message.content && (
+            <p className="text-sm text-foreground leading-relaxed break-words whitespace-pre-wrap">
+              {message.content}
+              {message.editedAt && (
+                <span className="ml-1 text-xs text-muted-foreground">(edited)</span>
+              )}
+            </p>
+          )
         )}
 
         {message.attachment && (
@@ -83,6 +122,18 @@ export function MessageItem({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="bg-card border border-border/50">
+              {actions.onEdit && message.content && (
+                <DropdownMenuItem
+                  className="flex items-center gap-2"
+                  onClick={() => {
+                    setDraft(message.content);
+                    setEditing(true);
+                  }}
+                >
+                  <PencilIcon className="w-4 h-4" />
+                  Edit Message
+                </DropdownMenuItem>
+              )}
               {actions.onDelete && (
                 <DropdownMenuItem
                   className="text-destructive hover:text-destructive hover:bg-destructive/10 flex items-center gap-2"
