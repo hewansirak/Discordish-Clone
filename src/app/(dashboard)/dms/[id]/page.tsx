@@ -28,6 +28,7 @@ export default function MessagePage({
 
   const sendMessage = useMutation(api.functions.message.create);
   const removeMessage = useMutation(api.functions.message.remove);
+  const editMessage = useMutation(api.functions.message.edit);
   const sendTyping = useMutation(api.functions.typing.upsert);
   const markRead = useMutation(api.functions.dm.markRead);
   const generateUploadUrl = useMutation(api.functions.message.generateUploadUrl);
@@ -100,6 +101,9 @@ export default function MessagePage({
                 message={message}
                 isOwn={message.sender?._id === me?._id}
                 actions={{
+                  onEdit: async (m, content) => {
+                    await editMessage({ id: m._id as Id<"messages">, content });
+                  },
                   onDelete: (m) =>
                     removeMessage({ id: m._id as Id<"messages"> }).catch(() =>
                       toast.error("Could not delete message")
