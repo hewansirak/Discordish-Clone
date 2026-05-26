@@ -13,4 +13,11 @@ export type ChatMessage = {
   attachment?: string | null;
   /** Set when the author changed the text after sending. */
   editedAt?: number;
+  /** The message this one answers; `deleted` is true once the original is gone. */
+  replyTo?: {
+    _id: string;
+    deleted: boolean;
+    content: string;
+    senderName: string;
+  } | null;
 };
