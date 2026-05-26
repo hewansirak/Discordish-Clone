@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LoaderIcon, PlusIcon, SendIcon } from "lucide-react";
+import { LoaderIcon, PlusIcon, SendIcon, XIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -15,12 +15,17 @@ export function MessageComposer({
   generateUploadUrl,
   onSend,
   onTyping,
+  replyingTo,
+  onCancelReply,
 }: {
   placeholder?: string;
   generateUploadUrl: () => Promise<string>;
   onSend: (message: { content: string; attachment?: Id<"_storage"> }) => Promise<void>;
   /** Called at most every couple of seconds while the user types. */
   onTyping?: () => void;
+  /** Shows a "Replying to" bar above the input. */
+  replyingTo?: { senderName: string; content: string } | null;
+  onCancelReply?: () => void;
 }) {
   const [content, setContent] = useState("");
   const [attachment, setAttachment] = useState<Id<"_storage">>();
@@ -79,6 +84,18 @@ export function MessageComposer({
       }}
     >
       <div className="flex flex-col gap-3">
+        {replyingTo && (
+          <div className="flex items-center justify-between rounded-lg border border-border/50 bg-card/50 px-3 py-2 text-xs text-muted-foreground">
+            <span className="truncate">
+              Replying to <span className="font-semibold">{replyingTo.senderName}</span>:{" "}
+              {replyingTo.content}
+            </span>
+            <button type="button" onClick={onCancelReply} className="ml-2 hover:text-foreground">
+              <XIcon className="size-4" />
+              <span className="sr-only">Cancel reply</span>
+            </button>
+          </div>
+        )}
         {file && <ImagePreview file={file} isUploading={isUploading} onRemove={clearAttachment} />}
 
         <div className="flex items-end gap-3 bg-card/50 border border-border/50 rounded-xl p-3">
@@ -106,6 +123,7 @@ export function MessageComposer({
                 void submit();
                 return;
               }
+              if (e.key === "Escape" && replyingTo) onCancelReply?.();
               if (onTyping && content.trim().length > 0 && Date.now() - lastTypingSent.current > TYPING_REFRESH_MS) {
                 lastTypingSent.current = Date.now();
                 onTyping();
