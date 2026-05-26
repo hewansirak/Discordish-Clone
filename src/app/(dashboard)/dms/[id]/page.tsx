@@ -5,7 +5,7 @@ import { api } from "../../../../../convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LoaderIcon, MessageCircleIcon } from "lucide-react";
-import { use, useEffect, useRef } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { PresenceDot } from "@/components/presence-dot";
@@ -33,6 +33,7 @@ export default function MessagePage({
   const markRead = useMutation(api.functions.dm.markRead);
   const generateUploadUrl = useMutation(api.functions.message.generateUploadUrl);
 
+  const [replyTarget, setReplyTarget] = useState<{ id: Id<"messages">; senderName: string; content: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const messageCount = messages?.length ?? 0;
 
@@ -101,6 +102,12 @@ export default function MessagePage({
                 message={message}
                 isOwn={message.sender?._id === me?._id}
                 actions={{
+                  onReply: (m) =>
+                    setReplyTarget({
+                      id: m._id as Id<"messages">,
+                      senderName: m.sender?.username ?? "Deleted User",
+                      content: m.content.slice(0, 80) || "Image",
+                    }),
                   onEdit: async (m, content) => {
                     await editMessage({ id: m._id as Id<"messages">, content });
                   },
@@ -120,8 +127,11 @@ export default function MessagePage({
       <div className="border-t border-border/50 bg-background/95 backdrop-blur-sm">
         <MessageComposer
           generateUploadUrl={() => generateUploadUrl()}
+          replyingTo={replyTarget}
+          onCancelReply={() => setReplyTarget(null)}
           onSend={async ({ content, attachment }) => {
-            await sendMessage({ directMessage: id, content, attachment });
+            await sendMessage({ directMessage: id, content, attachment, replyTo: replyTarget?.id });
+            setReplyTarget(null);
           }}
           onTyping={() => void sendTyping({ directMessage: id })}
         />
