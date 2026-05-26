@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { MoreVerticalIcon, PencilIcon, Trash2 } from "lucide-react";
+import { CornerUpLeftIcon, MoreVerticalIcon, PencilIcon, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -18,6 +18,8 @@ import type { ChatMessage } from "./types";
 export type MessageActions = {
   /** Provide to show "Delete" in the message menu. */
   onDelete?: (message: ChatMessage) => void;
+  /** Provide to show "Reply" in the message menu (available on everyone's messages). */
+  onReply?: (message: ChatMessage) => void;
   /** Provide to show "Edit" in the message menu. */
   onEdit?: (message: ChatMessage, content: string) => Promise<void>;
 };
@@ -31,7 +33,9 @@ export function MessageItem({
   isOwn: boolean;
   actions: MessageActions;
 }) {
-  const hasMenu = Boolean(actions.onDelete || actions.onEdit);
+  const canEdit = isOwn && Boolean(actions.onEdit) && Boolean(message.content);
+  const canDelete = isOwn && Boolean(actions.onDelete);
+  const hasMenu = canEdit || canDelete || Boolean(actions.onReply);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.content);
 
@@ -74,6 +78,20 @@ export function MessageItem({
           </p>
         </div>
 
+        {message.replyTo && (
+          <div className="mb-1 flex items-center gap-1 border-l-2 border-primary/50 pl-2 text-xs text-muted-foreground">
+            <CornerUpLeftIcon className="size-3 shrink-0" />
+            {message.replyTo.deleted ? (
+              <span className="italic">Original message was deleted</span>
+            ) : (
+              <span className="truncate">
+                <span className="font-semibold">{message.replyTo.senderName}</span>{" "}
+                {message.replyTo.content}
+              </span>
+            )}
+          </div>
+        )}
+
         {editing ? (
           <div className="flex flex-col gap-1">
             <Input
@@ -112,7 +130,7 @@ export function MessageItem({
         )}
       </div>
 
-      {hasMenu && isOwn && (
+      {hasMenu && (
         <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -122,7 +140,16 @@ export function MessageItem({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="bg-card border border-border/50">
-              {actions.onEdit && message.content && (
+              {actions.onReply && (
+                <DropdownMenuItem
+                  className="flex items-center gap-2"
+                  onClick={() => actions.onReply?.(message)}
+                >
+                  <CornerUpLeftIcon className="w-4 h-4" />
+                  Reply
+                </DropdownMenuItem>
+              )}
+              {canEdit && (
                 <DropdownMenuItem
                   className="flex items-center gap-2"
                   onClick={() => {
@@ -134,7 +161,7 @@ export function MessageItem({
                   Edit Message
                 </DropdownMenuItem>
               )}
-              {actions.onDelete && (
+              {canDelete && (
                 <DropdownMenuItem
                   className="text-destructive hover:text-destructive hover:bg-destructive/10 flex items-center gap-2"
                   onClick={() => actions.onDelete?.(message)}
