@@ -5,7 +5,7 @@ import {
   requireDmMember,
 } from "./helpers";
 import { internal } from "../_generated/api";
-import { Doc } from "../_generated/dataModel";
+import { Doc, Id } from "../_generated/dataModel";
 import { QueryCtx } from "../_generated/server";
 
 export const MAX_MESSAGE_LENGTH = 2000;
@@ -28,7 +28,23 @@ export async function toClientMessage(ctx: QueryCtx, message: Doc<"messages">) {
   const attachment = message.attachment
     ? await ctx.storage.getUrl(message.attachment)
     : undefined;
-  return { ...message, attachment, sender };
+  const replyTo = message.replyTo ? await getReplyPreview(ctx, message.replyTo) : null;
+  return { ...message, attachment, sender, replyTo };
+}
+
+/** Short quote of the message being replied to, or a tombstone if it was deleted. */
+async function getReplyPreview(ctx: QueryCtx, id: Id<"messages">) {
+  const original = await ctx.db.get(id);
+  if (!original) {
+    return { _id: id, deleted: true as const, content: "", senderName: "" };
+  }
+  const sender = await ctx.db.get(original.sender);
+  return {
+    _id: id,
+    deleted: false as const,
+    content: original.content.slice(0, 120) || (original.attachment ? "Image" : ""),
+    senderName: sender?.username ?? "Deleted User",
+  };
 }
 
 export const list = authenticatedQuery({
@@ -52,14 +68,22 @@ export const create = authenticatedMutation({
     content: v.string(),
     directMessage: v.id("directMessages"),
     attachment: v.optional(v.id("_storage")),
+    replyTo: v.optional(v.id("messages")),
   },
-  handler: async (ctx, { content: rawContent, directMessage, attachment }) => {
+  handler: async (ctx, { content: rawContent, directMessage, attachment, replyTo }) => {
     const content = validateContent(rawContent, Boolean(attachment));
     await requireDmMember(ctx, ctx.user, directMessage);
+    if (replyTo) {
+      const original = await ctx.db.get(replyTo);
+      if (!original || original.directMessage !== directMessage) {
+        throw new Error("The message you are replying to is not in this conversation.");
+      }
+    }
     await ctx.db.insert("messages", {
       content,
       directMessage,
       attachment,
+      replyTo,
       sender: ctx.user._id,
     });
     await ctx.scheduler.runAfter(0, internal.functions.typing.remove, {

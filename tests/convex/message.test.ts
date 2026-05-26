@@ -100,4 +100,35 @@ describe("messages", () => {
     const [after] = await alice.as.query(api.functions.message.list, { directMessage: dm });
     expect(after.editedAt).toBeUndefined();
   });
+
+  it("supports replies with a preview of the original message", async () => {
+    const { alice, bob, dm } = await setup();
+    await alice.as.mutation(api.functions.message.create, { directMessage: dm, content: "lunch at noon?" });
+    const [original] = await bob.as.query(api.functions.message.list, { directMessage: dm });
+    await bob.as.mutation(api.functions.message.create, {
+      directMessage: dm,
+      content: "sounds good",
+      replyTo: original._id,
+    });
+
+    const [, reply] = await alice.as.query(api.functions.message.list, { directMessage: dm });
+    expect(reply.replyTo).toMatchObject({ senderName: "alice", content: "lunch at noon?", deleted: false });
+
+    await alice.as.mutation(api.functions.message.remove, { id: original._id });
+    const [orphan] = await alice.as.query(api.functions.message.list, { directMessage: dm });
+    expect(orphan.replyTo).toMatchObject({ deleted: true });
+  });
+
+  it("rejects a reply to a message from another conversation", async () => {
+    const { t, alice, dm } = await setup();
+    const carol = await makeUser(t, "carol");
+    await befriend(alice, carol);
+    const otherDm = await alice.as.mutation(api.functions.dm.create, { username: "carol" });
+    await alice.as.mutation(api.functions.message.create, { directMessage: otherDm, content: "secret" });
+    const [foreign] = await alice.as.query(api.functions.message.list, { directMessage: otherDm });
+
+    await expect(
+      alice.as.mutation(api.functions.message.create, { directMessage: dm, content: "oops", replyTo: foreign._id })
+    ).rejects.toThrow(/not in this conversation/i);
+  });
 });
