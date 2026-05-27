@@ -38,6 +38,13 @@ export default defineSchema({
     editedAt: v.optional(v.number()),
     replyTo: v.optional(v.id("messages")),
   }).index("by_directMessage", ["directMessage"]),
+  reactions: defineTable({
+    message: v.id("messages"),
+    user: v.id("users"),
+    emoji: v.string(),
+  })
+    .index("by_message", ["message"])
+    .index("by_message_user_emoji", ["message", "user", "emoji"]),
   presence: defineTable({
     user: v.id("users"),
     lastSeen: v.number(),
