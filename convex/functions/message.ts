@@ -7,6 +7,7 @@ import {
 import { internal } from "../_generated/api";
 import { Doc, Id } from "../_generated/dataModel";
 import { QueryCtx } from "../_generated/server";
+import { summarizeReactions } from "../lib/emoji";
 
 export const MAX_MESSAGE_LENGTH = 2000;
 
@@ -23,13 +24,27 @@ export function validateContent(raw: string, hasAttachment: boolean): string {
 }
 
 /** Add the sender and a public attachment URL to a stored message. */
-export async function toClientMessage(ctx: QueryCtx, message: Doc<"messages">) {
+export async function toClientMessage(
+  ctx: QueryCtx,
+  message: Doc<"messages">,
+  viewer: Id<"users">
+) {
   const sender = await ctx.db.get(message.sender);
   const attachment = message.attachment
     ? await ctx.storage.getUrl(message.attachment)
     : undefined;
   const replyTo = message.replyTo ? await getReplyPreview(ctx, message.replyTo) : null;
-  return { ...message, attachment, sender, replyTo };
+  const reactionRows = await ctx.db
+    .query("reactions")
+    .withIndex("by_message", (q) => q.eq("message", message._id))
+    .collect();
+  return {
+    ...message,
+    attachment,
+    sender,
+    replyTo,
+    reactions: summarizeReactions(reactionRows, viewer),
+  };
 }
 
 /** Short quote of the message being replied to, or a tombstone if it was deleted. */
@@ -59,7 +74,7 @@ export const list = authenticatedQuery({
         q.eq("directMessage", directMessage)
       )
       .collect();
-    return await Promise.all(messages.map((m) => toClientMessage(ctx, m)));
+    return await Promise.all(messages.map((m) => toClientMessage(ctx, m, ctx.user._id)));
   },
 });
 
@@ -122,6 +137,11 @@ export const remove = authenticatedMutation({
     } else if (message.sender !== ctx.user._id) {
       throw new Error("You are not the sender of this message.");
     }
+    const reactions = await ctx.db
+      .query("reactions")
+      .withIndex("by_message", (q) => q.eq("message", id))
+      .collect();
+    await Promise.all(reactions.map((r) => ctx.db.delete(r._id)));
     await ctx.db.delete(id);
     if (message.attachment) {
       await ctx.storage.delete(message.attachment);
