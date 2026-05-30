@@ -13,6 +13,7 @@ import { CornerUpLeftIcon, MoreVerticalIcon, PencilIcon, Trash2 } from "lucide-r
 import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ReactionBar } from "./reaction-bar";
 import type { ChatMessage } from "./types";
 
 export type MessageActions = {
@@ -20,6 +21,8 @@ export type MessageActions = {
   onDelete?: (message: ChatMessage) => void;
   /** Provide to show "Reply" in the message menu (available on everyone's messages). */
   onReply?: (message: ChatMessage) => void;
+  /** Provide to enable emoji reactions. */
+  onToggleReaction?: (message: ChatMessage, emoji: string) => void;
   /** Provide to show "Edit" in the message menu. */
   onEdit?: (message: ChatMessage, content: string) => Promise<void>;
 };
@@ -115,6 +118,13 @@ export function MessageItem({
               )}
             </p>
           )
+        )}
+
+        {actions.onToggleReaction && (
+          <ReactionBar
+            reactions={message.reactions ?? []}
+            onToggle={(emoji) => actions.onToggleReaction?.(message, emoji)}
+          />
         )}
 
         {message.attachment && (
