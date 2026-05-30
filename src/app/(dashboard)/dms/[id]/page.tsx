@@ -29,6 +29,7 @@ export default function MessagePage({
   const sendMessage = useMutation(api.functions.message.create);
   const removeMessage = useMutation(api.functions.message.remove);
   const editMessage = useMutation(api.functions.message.edit);
+  const toggleReaction = useMutation(api.functions.reaction.toggle);
   const sendTyping = useMutation(api.functions.typing.upsert);
   const markRead = useMutation(api.functions.dm.markRead);
   const generateUploadUrl = useMutation(api.functions.message.generateUploadUrl);
@@ -102,6 +103,10 @@ export default function MessagePage({
                 message={message}
                 isOwn={message.sender?._id === me?._id}
                 actions={{
+                  onToggleReaction: (m, emoji) =>
+                    toggleReaction({ message: m._id as Id<"messages">, emoji }).catch(() =>
+                      toast.error("Could not add reaction")
+                    ),
                   onReply: (m) =>
                     setReplyTarget({
                       id: m._id as Id<"messages">,
