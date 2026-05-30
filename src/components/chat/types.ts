@@ -13,6 +13,7 @@ export type ChatMessage = {
   attachment?: string | null;
   /** Set when the author changed the text after sending. */
   editedAt?: number;
+  reactions?: { emoji: string; count: number; reacted: boolean }[];
   /** The message this one answers; `deleted` is true once the original is gone. */
   replyTo?: {
     _id: string;
