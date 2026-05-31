@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 import {
   authenticatedMutation,
   authenticatedQuery,
@@ -75,6 +76,26 @@ export const list = authenticatedQuery({
       )
       .collect();
     return await Promise.all(messages.map((m) => toClientMessage(ctx, m, ctx.user._id)));
+  },
+});
+
+/** Newest-first pages of messages, so long conversations load incrementally. */
+export const listPage = authenticatedQuery({
+  args: {
+    directMessage: v.id("directMessages"),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, { directMessage, paginationOpts }) => {
+    await requireDmMember(ctx, ctx.user, directMessage);
+    const result = await ctx.db
+      .query("messages")
+      .withIndex("by_directMessage", (q) => q.eq("directMessage", directMessage))
+      .order("desc")
+      .paginate(paginationOpts);
+    return {
+      ...result,
+      page: await Promise.all(result.page.map((m) => toClientMessage(ctx, m, ctx.user._id))),
+    };
   },
 });
 

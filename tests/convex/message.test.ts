@@ -131,4 +131,35 @@ describe("messages", () => {
       alice.as.mutation(api.functions.message.create, { directMessage: dm, content: "oops", replyTo: foreign._id })
     ).rejects.toThrow(/not in this conversation/i);
   });
+
+  it("pages through a conversation newest first", async () => {
+    const { alice, dm } = await setup();
+    for (const word of ["a", "b", "c", "d", "e"]) {
+      await alice.as.mutation(api.functions.message.create, { directMessage: dm, content: word });
+    }
+    const first = await alice.as.query(api.functions.message.listPage, {
+      directMessage: dm,
+      paginationOpts: { numItems: 2, cursor: null },
+    });
+    expect(first.page.map((m) => m.content)).toEqual(["e", "d"]);
+    expect(first.isDone).toBe(false);
+
+    const second = await alice.as.query(api.functions.message.listPage, {
+      directMessage: dm,
+      paginationOpts: { numItems: 10, cursor: first.continueCursor },
+    });
+    expect(second.page.map((m) => m.content)).toEqual(["c", "b", "a"]);
+    expect(second.isDone).toBe(true);
+  });
+
+  it("does not page messages for non-members", async () => {
+    const { t, dm } = await setup();
+    const eve = await makeUser(t, "eve");
+    await expect(
+      eve.as.query(api.functions.message.listPage, {
+        directMessage: dm,
+        paginationOpts: { numItems: 5, cursor: null },
+      })
+    ).rejects.toThrow(/not a member/i);
+  });
 });
