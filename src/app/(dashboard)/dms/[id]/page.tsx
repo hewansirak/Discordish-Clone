@@ -1,8 +1,9 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LoaderIcon, MessageCircleIcon } from "lucide-react";
 import { use, useEffect, useRef, useState } from "react";
@@ -21,7 +22,13 @@ export default function MessagePage({
 }) {
   const { id } = use(params);
   const me = useQuery(api.functions.user.get);
-  const messages = useQuery(api.functions.message.list, { directMessage: id });
+  const {
+    results: newestFirst,
+    status: pageStatus,
+    loadMore,
+  } = usePaginatedQuery(api.functions.message.listPage, { directMessage: id }, { initialNumItems: 30 });
+  // Pages arrive newest first; the conversation reads oldest to newest.
+  const messages = pageStatus === "LoadingFirstPage" ? undefined : [...newestFirst].reverse();
   const directMessage = useQuery(api.functions.dm.get, { id });
   const typing = useQuery(api.functions.typing.list, { directMessage: id });
   const online = useOnlineUsers(directMessage ? [directMessage.user._id] : []);
@@ -90,6 +97,13 @@ export default function MessagePage({
 
       <ScrollArea className="flex-1 px-4">
         <div className="py-4 space-y-4">
+          {pageStatus === "CanLoadMore" && (
+            <div className="flex justify-center">
+              <Button variant="outline" size="sm" onClick={() => loadMore(30)}>
+                Load older messages
+              </Button>
+            </div>
+          )}
           {messages?.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-center">
               <MessageCircleIcon className="h-16 w-16 text-muted-foreground/30 mb-4" />
