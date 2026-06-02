@@ -44,10 +44,12 @@ export default function MessagePage({
   const [replyTarget, setReplyTarget] = useState<{ id: Id<"messages">; senderName: string; content: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const messageCount = messages?.length ?? 0;
+  const newestId = messages?.[messages.length - 1]?._id;
 
+  // Follow new messages, but stay put when older ones are prepended.
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messageCount]);
+  }, [newestId]);
 
   // Anything that arrives while this conversation is open counts as read.
   useEffect(() => {
