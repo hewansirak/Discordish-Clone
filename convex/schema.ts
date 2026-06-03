@@ -43,6 +43,31 @@ export default defineSchema({
       searchField: "content",
       filterFields: ["directMessage"],
     }),
+  servers: defineTable({
+    name: v.string(),
+    owner: v.id("users"),
+    inviteCode: v.string(),
+  }).index("by_inviteCode", ["inviteCode"]),
+  serverMembers: defineTable({
+    server: v.id("servers"),
+    user: v.id("users"),
+    role: v.union(v.literal("owner"), v.literal("admin"), v.literal("member")),
+  })
+    .index("by_server", ["server"])
+    .index("by_user", ["user"])
+    .index("by_server_user", ["server", "user"]),
+  channels: defineTable({
+    server: v.id("servers"),
+    name: v.string(),
+  }).index("by_server", ["server"]),
+  channelMessages: defineTable({
+    channel: v.id("channels"),
+    server: v.id("servers"),
+    sender: v.id("users"),
+    content: v.string(),
+    attachment: v.optional(v.id("_storage")),
+    editedAt: v.optional(v.number()),
+  }).index("by_channel", ["channel"]),
   reactions: defineTable({
     message: v.id("messages"),
     user: v.id("users"),
