@@ -37,7 +37,12 @@ export default defineSchema({
     attachment: v.optional(v.id("_storage")),
     editedAt: v.optional(v.number()),
     replyTo: v.optional(v.id("messages")),
-  }).index("by_directMessage", ["directMessage"]),
+  })
+    .index("by_directMessage", ["directMessage"])
+    .searchIndex("search_content", {
+      searchField: "content",
+      filterFields: ["directMessage"],
+    }),
   reactions: defineTable({
     message: v.id("messages"),
     user: v.id("users"),
