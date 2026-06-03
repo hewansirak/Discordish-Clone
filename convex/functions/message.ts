@@ -99,6 +99,26 @@ export const listPage = authenticatedQuery({
   },
 });
 
+/** Full-text search inside one conversation. */
+export const search = authenticatedQuery({
+  args: {
+    directMessage: v.id("directMessages"),
+    query: v.string(),
+  },
+  handler: async (ctx, { directMessage, query }) => {
+    await requireDmMember(ctx, ctx.user, directMessage);
+    const term = query.trim();
+    if (term.length < 2) return [];
+    const matches = await ctx.db
+      .query("messages")
+      .withSearchIndex("search_content", (q) =>
+        q.search("content", term).eq("directMessage", directMessage)
+      )
+      .take(20);
+    return await Promise.all(matches.map((m) => toClientMessage(ctx, m, ctx.user._id)));
+  },
+});
+
 export const create = authenticatedMutation({
   args: {
     content: v.string(),

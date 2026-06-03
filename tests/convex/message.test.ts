@@ -162,4 +162,27 @@ describe("messages", () => {
       })
     ).rejects.toThrow(/not a member/i);
   });
+
+  it("searches only within the given conversation", async () => {
+    const { t, alice, dm } = await setup();
+    const carol = await makeUser(t, "carol");
+    await befriend(alice, carol);
+    const otherDm = await alice.as.mutation(api.functions.dm.create, { username: "carol" });
+
+    await alice.as.mutation(api.functions.message.create, { directMessage: dm, content: "the deploy is green" });
+    await alice.as.mutation(api.functions.message.create, { directMessage: dm, content: "lunch?" });
+    await alice.as.mutation(api.functions.message.create, { directMessage: otherDm, content: "deploy secrets" });
+
+    const hits = await alice.as.query(api.functions.message.search, { directMessage: dm, query: "deploy" });
+    expect(hits.map((m) => m.content)).toEqual(["the deploy is green"]);
+    expect(await alice.as.query(api.functions.message.search, { directMessage: dm, query: "d" })).toEqual([]);
+  });
+
+  it("does not let outsiders search a conversation", async () => {
+    const { t, dm } = await setup();
+    const eve = await makeUser(t, "eve");
+    await expect(
+      eve.as.query(api.functions.message.search, { directMessage: dm, query: "anything" })
+    ).rejects.toThrow(/not a member/i);
+  });
 });
