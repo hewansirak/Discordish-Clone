@@ -14,6 +14,7 @@ import { useOnlineUsers } from "@/hooks/use-presence";
 import { MessageItem } from "@/components/chat/message-item";
 import { MessageComposer } from "@/components/chat/message-composer";
 import { TypingIndicator } from "@/components/chat/typing-indicator";
+import { MessageSearch } from "./_components/message-search";
 
 export default function MessagePage({
   params,
@@ -94,6 +95,7 @@ export default function MessagePage({
             </h1>
             <p className="text-sm text-muted-foreground">{isOnline ? "Online" : "Offline"}</p>
           </div>
+          <MessageSearch directMessage={id} />
         </div>
       </header>
 
