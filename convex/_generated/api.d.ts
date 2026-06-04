@@ -23,6 +23,9 @@ import type * as functions_typing from "../functions/typing.js";
 import type * as functions_user from "../functions/user.js";
 import type * as http from "../http.js";
 import type * as lib_emoji from "../lib/emoji.js";
+import type * as lib_invite from "../lib/invite.js";
+import type * as lib_names from "../lib/names.js";
+import type * as lib_permissions from "../lib/permissions.js";
 import type * as lib_presence from "../lib/presence.js";
 import type * as lib_username from "../lib/username.js";
 
@@ -45,6 +48,9 @@ declare const fullApi: ApiFromModules<{
   "functions/user": typeof functions_user;
   http: typeof http;
   "lib/emoji": typeof lib_emoji;
+  "lib/invite": typeof lib_invite;
+  "lib/names": typeof lib_names;
+  "lib/permissions": typeof lib_permissions;
   "lib/presence": typeof lib_presence;
   "lib/username": typeof lib_username;
 }>;
