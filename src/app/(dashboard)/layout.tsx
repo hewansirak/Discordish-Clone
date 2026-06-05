@@ -4,6 +4,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { RedirectToSignIn } from "@clerk/nextjs";
 import { Authenticated, Unauthenticated } from "convex/react";
 import { DashboardSidebar } from "./_components/sidebar";
+import { ServerRail } from "./_components/server-rail";
 import { usePresenceHeartbeat } from "@/hooks/use-presence";
 
 function PresenceHeartbeat() {
@@ -20,10 +21,13 @@ export default function DashboardLayout({
     <>
       <Authenticated>
         <PresenceHeartbeat />
-        <SidebarProvider>
-          <DashboardSidebar />
-          {children}
-        </SidebarProvider>
+        <div className="flex min-h-svh w-full">
+          <ServerRail />
+          <SidebarProvider className="min-w-0 flex-1">
+            <DashboardSidebar />
+            {children}
+          </SidebarProvider>
+        </div>
       </Authenticated>
       <Unauthenticated>
         <RedirectToSignIn />
