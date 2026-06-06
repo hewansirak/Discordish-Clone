@@ -6,6 +6,7 @@ import { Authenticated, Unauthenticated } from "convex/react";
 import { DashboardSidebar } from "./_components/sidebar";
 import { ServerRail } from "./_components/server-rail";
 import { usePresenceHeartbeat } from "@/hooks/use-presence";
+import { usePathname } from "next/navigation";
 
 function PresenceHeartbeat() {
   usePresenceHeartbeat();
@@ -17,6 +18,8 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Servers bring their own channel list, so the direct-message sidebar steps aside.
+  const inServer = usePathname().startsWith("/servers");
   return (
     <>
       <Authenticated>
@@ -24,7 +27,7 @@ export default function DashboardLayout({
         <div className="flex min-h-svh w-full">
           <ServerRail />
           <SidebarProvider className="min-w-0 flex-1">
-            <DashboardSidebar />
+            {!inServer && <DashboardSidebar />}
             {children}
           </SidebarProvider>
         </div>
