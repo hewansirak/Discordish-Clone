@@ -101,3 +101,69 @@ export async function canViewVideo(
   }
   return false;
 }
+
+/** Playback details for a video the caller is already allowed to see. */
+async function toPlayable(ctx: QueryCtx, video: Doc<"videos">) {
+  return {
+    _id: video._id,
+    _creationTime: video._creationTime,
+    title: video.title,
+    description: video.description,
+    duration: video.duration,
+    visibility: video.visibility,
+    status: video.status,
+    transcript: video.transcript,
+    transcriptStatus: video.transcriptStatus,
+    url: video.storageId ? await ctx.storage.getUrl(video.storageId) : null,
+  };
+}
+
+/**
+ * Video attached to a chat message. Call only after the caller passed the
+ * conversation's membership check; deleted videos come back as null.
+ */
+export async function toChatVideo(ctx: QueryCtx, id: Id<"videos"> | undefined) {
+  if (!id) return null;
+  const video = await ctx.db.get(id);
+  if (!video || video.status !== "ready") return null;
+  return {
+    _id: video._id,
+    title: video.title,
+    duration: video.duration,
+    url: video.storageId ? await ctx.storage.getUrl(video.storageId) : null,
+  };
+}
+
+export const generateUploadUrl = authenticatedMutation({
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/** Step 1 of an upload: reserve a row. Enforces the per-user rate limit. */
+export const create = authenticatedMutation({
+  args: {
+    title: v.string(),
+    description: v.optional(v.string()),
+    duration: v.number(),
+    visibility: v.union(v.literal("public"), v.literal("private")),
+  },
+  handler: async (ctx, { title, description, duration, visibility }) => {
+    const cutoff = Date.now() - UPLOAD_WINDOW_MS;
+    const recent = await ctx.db
+      .query("videos")
+      .withIndex("by_owner", (q) => q.eq("owner", ctx.user._id).gt("_creationTime", cutoff))
+      .take(UPLOAD_LIMIT);
+    if (recent.length >= UPLOAD_LIMIT) {
+      throw new Error("You are uploading too fast. Please wait a few minutes and try again.");
+    }
+    return await ctx.db.insert("videos", {
+      owner: ctx.user._id,
+      title: cleanTitle(title),
+      description: cleanDescription(description),
+      duration: Number.isFinite(duration) ? Math.max(0, Math.round(duration)) : 0,
+      visibility,
+      status: "uploading",
+    });
+  },
+});
