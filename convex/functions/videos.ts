@@ -167,3 +167,49 @@ export const create = authenticatedMutation({
     });
   },
 });
+
+/** Step 2: attach the uploaded file and mark the video ready. */
+export const finalize = authenticatedMutation({
+  args: { id: v.id("videos"), storageId: v.id("_storage") },
+  handler: async (ctx, { id, storageId }) => {
+    const video = await requireOwnVideo(ctx, ctx.user, id);
+    if (video.status !== "uploading") throw new Error("This video was already saved.");
+
+    const reused = await ctx.db
+      .query("videos")
+      .withIndex("by_storage", (q) => q.eq("storageId", storageId))
+      .first();
+    if (reused) throw new Error("That file is already attached to a video.");
+
+    // Rejections are returned, not thrown: a thrown error would roll back the cleanup.
+    const file = await ctx.db.system.get(storageId);
+    const reject = async (error: string) => {
+      if (file) await ctx.storage.delete(storageId);
+      await ctx.db.patch(id, { status: "failed" });
+      return { ok: false as const, error };
+    };
+    if (!file) return await reject("The uploaded file could not be found.");
+    if (!file.contentType?.startsWith("video/")) return await reject("That file is not a video.");
+    if (file.size > MAX_VIDEO_BYTES) {
+      return await reject(`Videos can be at most ${MAX_VIDEO_BYTES / (1024 * 1024)} MB.`);
+    }
+
+    // Transcripts are optional: they only run when a Groq key is configured.
+    const transcribe = Boolean(process.env.GROQ_API_KEY);
+    await ctx.db.patch(id, {
+      storageId,
+      size: file.size,
+      mimeType: file.contentType,
+      status: "ready",
+      transcriptStatus: transcribe
+        ? file.size > TRANSCRIBE_MAX_BYTES
+          ? "unavailable"
+          : "pending"
+        : undefined,
+    });
+    if (transcribe && file.size <= TRANSCRIBE_MAX_BYTES) {
+      await ctx.scheduler.runAfter(0, internal.functions.transcribe.run, { id });
+    }
+    return { ok: true as const };
+  },
+});
