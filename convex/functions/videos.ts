@@ -250,3 +250,42 @@ export const remove = authenticatedMutation({
     await ctx.db.delete(id);
   },
 });
+
+/** The caller's own library, newest first. A search term filters by title. */
+export const listMine = authenticatedQuery({
+  args: { search: v.optional(v.string()) },
+  handler: async (ctx, { search }) => {
+    const term = search?.trim();
+    const videos = term
+      ? await ctx.db
+          .query("videos")
+          .withSearchIndex("search_title", (q) => q.search("title", term).eq("owner", ctx.user._id))
+          .take(LIST_LIMIT)
+      : await ctx.db
+          .query("videos")
+          .withIndex("by_owner", (q) => q.eq("owner", ctx.user._id))
+          .order("desc")
+          .take(LIST_LIMIT);
+    return await Promise.all(videos.map((video) => toPlayable(ctx, video)));
+  },
+});
+
+/**
+ * Watch page data. Works signed out, so it is a plain query. A video the caller
+ * may not see looks exactly like one that does not exist.
+ */
+export const getForWatch = query({
+  args: { id: v.string() },
+  handler: async (ctx, { id }) => {
+    const videoId = ctx.db.normalizeId("videos", id);
+    const viewer = await getCurrentUser(ctx);
+    const video = videoId ? await ctx.db.get(videoId) : null;
+    if (!video || !(await canViewVideo(ctx, viewer, video))) return null;
+    const owner = await ctx.db.get(video.owner);
+    return {
+      ...(await toPlayable(ctx, video)),
+      isOwner: viewer?._id === video.owner,
+      owner: owner ? { username: owner.username, image: owner.image } : null,
+    };
+  },
+});
