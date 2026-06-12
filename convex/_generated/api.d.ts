@@ -22,7 +22,6 @@ import type * as functions_message from "../functions/message.js";
 import type * as functions_presence from "../functions/presence.js";
 import type * as functions_reaction from "../functions/reaction.js";
 import type * as functions_server from "../functions/server.js";
-import type * as functions_transcribe from "../functions/transcribe.js";
 import type * as functions_typing from "../functions/typing.js";
 import type * as functions_user from "../functions/user.js";
 import type * as functions_videos from "../functions/videos.js";
@@ -52,7 +51,6 @@ declare const fullApi: ApiFromModules<{
   "functions/presence": typeof functions_presence;
   "functions/reaction": typeof functions_reaction;
   "functions/server": typeof functions_server;
-  "functions/transcribe": typeof functions_transcribe;
   "functions/typing": typeof functions_typing;
   "functions/user": typeof functions_user;
   "functions/videos": typeof functions_videos;
