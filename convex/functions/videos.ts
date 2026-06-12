@@ -213,3 +213,40 @@ export const finalize = authenticatedMutation({
     return { ok: true as const };
   },
 });
+
+/** Called by the client when the upload itself failed. Cleans up the reserved row. */
+export const markFailed = authenticatedMutation({
+  args: { id: v.id("videos") },
+  handler: async (ctx, { id }) => {
+    const video = await requireOwnVideo(ctx, ctx.user, id);
+    if (video.status !== "uploading") return;
+    await ctx.db.patch(id, { status: "failed" });
+  },
+});
+
+export const update = authenticatedMutation({
+  args: {
+    id: v.id("videos"),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    visibility: v.optional(v.union(v.literal("public"), v.literal("private"))),
+  },
+  handler: async (ctx, { id, title, description, visibility }) => {
+    await requireOwnVideo(ctx, ctx.user, id);
+    await ctx.db.patch(id, {
+      ...(title !== undefined && { title: cleanTitle(title) }),
+      ...(description !== undefined && { description: cleanDescription(description) }),
+      ...(visibility !== undefined && { visibility }),
+    });
+  },
+});
+
+/** Deletes the row and its stored file. Chat messages that carried it show a tombstone. */
+export const remove = authenticatedMutation({
+  args: { id: v.id("videos") },
+  handler: async (ctx, { id }) => {
+    const video = await requireOwnVideo(ctx, ctx.user, id);
+    if (video.storageId) await ctx.storage.delete(video.storageId);
+    await ctx.db.delete(id);
+  },
+});
