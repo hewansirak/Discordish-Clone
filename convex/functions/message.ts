@@ -61,8 +61,7 @@ async function getReplyPreview(ctx: QueryCtx, id: Id<"messages">) {
   return {
     _id: id,
     deleted: false as const,
-    content: original.content.slice(0, 120) ||
-      (original.video ? "Video" : original.attachment ? "Image" : ""),
+    content: original.content.slice(0, 120) || (original.attachment ? "Image" : ""),
     senderName: sender?.username ?? "Deleted User",
   };
 }
@@ -129,12 +128,10 @@ export const create = authenticatedMutation({
     directMessage: v.id("directMessages"),
     attachment: v.optional(v.id("_storage")),
     replyTo: v.optional(v.id("messages")),
-    video: v.optional(v.id("videos")),
   },
-  handler: async (ctx, { content: rawContent, directMessage, attachment, replyTo, video }) => {
-    const content = validateContent(rawContent, Boolean(attachment || video));
+  handler: async (ctx, { content: rawContent, directMessage, attachment, replyTo }) => {
+    const content = validateContent(rawContent, Boolean(attachment));
     await requireDmMember(ctx, ctx.user, directMessage);
-    if (video) await requireShareableVideo(ctx, ctx.user, video);
     if (replyTo) {
       const original = await ctx.db.get(replyTo);
       if (!original || original.directMessage !== directMessage) {
@@ -146,7 +143,6 @@ export const create = authenticatedMutation({
       directMessage,
       attachment,
       replyTo,
-      video,
       sender: ctx.user._id,
     });
     await ctx.scheduler.runAfter(0, internal.functions.typing.remove, {
@@ -168,7 +164,7 @@ export const edit = authenticatedMutation({
     } else if (message.sender !== ctx.user._id) {
       throw new Error("You are not the sender of this message.");
     }
-    const content = validateContent(rawContent, Boolean(message.attachment || message.video));
+    const content = validateContent(rawContent, Boolean(message.attachment));
     if (content === message.content) return;
     await ctx.db.patch(id, { content, editedAt: Date.now() });
   },
