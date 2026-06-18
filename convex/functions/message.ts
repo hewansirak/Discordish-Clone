@@ -61,7 +61,8 @@ async function getReplyPreview(ctx: QueryCtx, id: Id<"messages">) {
   return {
     _id: id,
     deleted: false as const,
-    content: original.content.slice(0, 120) || (original.attachment ? "Image" : ""),
+    content: original.content.slice(0, 120) ||
+      (original.video ? "Video" : original.attachment ? "Image" : ""),
     senderName: sender?.username ?? "Deleted User",
   };
 }
