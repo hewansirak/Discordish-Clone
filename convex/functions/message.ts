@@ -168,7 +168,7 @@ export const edit = authenticatedMutation({
     } else if (message.sender !== ctx.user._id) {
       throw new Error("You are not the sender of this message.");
     }
-    const content = validateContent(rawContent, Boolean(message.attachment));
+    const content = validateContent(rawContent, Boolean(message.attachment || message.video));
     if (content === message.content) return;
     await ctx.db.patch(id, { content, editedAt: Date.now() });
   },
