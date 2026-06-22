@@ -44,19 +44,16 @@ export const send = authenticatedMutation({
     channel: v.id("channels"),
     content: v.string(),
     attachment: v.optional(v.id("_storage")),
-    video: v.optional(v.id("videos")),
   },
-  handler: async (ctx, { channel, content: raw, attachment, video }) => {
-    const content = validateContent(raw, Boolean(attachment || video));
+  handler: async (ctx, { channel, content: raw, attachment }) => {
+    const content = validateContent(raw, Boolean(attachment));
     const { channel: row } = await loadChannel(ctx, ctx.user, channel);
-    if (video) await requireShareableVideo(ctx, ctx.user, video);
     await ctx.db.insert("channelMessages", {
       channel,
       server: row.server,
       sender: ctx.user._id,
       content,
       attachment,
-      video,
     });
   },
 });
@@ -70,7 +67,7 @@ export const edit = authenticatedMutation({
       throw new Error("You are not the sender of this message.");
     }
     await requireServerMember(ctx, ctx.user, message.server);
-    const content = validateContent(raw, Boolean(message.attachment || message.video));
+    const content = validateContent(raw, Boolean(message.attachment));
     if (content === message.content) return;
     await ctx.db.patch(id, { content, editedAt: Date.now() });
   },
