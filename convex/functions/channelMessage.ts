@@ -70,7 +70,7 @@ export const edit = authenticatedMutation({
       throw new Error("You are not the sender of this message.");
     }
     await requireServerMember(ctx, ctx.user, message.server);
-    const content = validateContent(raw, Boolean(message.attachment));
+    const content = validateContent(raw, Boolean(message.attachment || message.video));
     if (content === message.content) return;
     await ctx.db.patch(id, { content, editedAt: Date.now() });
   },
