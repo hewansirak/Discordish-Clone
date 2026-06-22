@@ -129,10 +129,12 @@ export const create = authenticatedMutation({
     directMessage: v.id("directMessages"),
     attachment: v.optional(v.id("_storage")),
     replyTo: v.optional(v.id("messages")),
+    video: v.optional(v.id("videos")),
   },
-  handler: async (ctx, { content: rawContent, directMessage, attachment, replyTo }) => {
-    const content = validateContent(rawContent, Boolean(attachment));
+  handler: async (ctx, { content: rawContent, directMessage, attachment, replyTo, video }) => {
+    const content = validateContent(rawContent, Boolean(attachment || video));
     await requireDmMember(ctx, ctx.user, directMessage);
+    if (video) await requireShareableVideo(ctx, ctx.user, video);
     if (replyTo) {
       const original = await ctx.db.get(replyTo);
       if (!original || original.directMessage !== directMessage) {
@@ -144,6 +146,7 @@ export const create = authenticatedMutation({
       directMessage,
       attachment,
       replyTo,
+      video,
       sender: ctx.user._id,
     });
     await ctx.scheduler.runAfter(0, internal.functions.typing.remove, {
