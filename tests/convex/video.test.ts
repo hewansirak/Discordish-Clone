@@ -143,3 +143,46 @@ describe("saving videos", () => {
     await expect(t.query(api.functions.videos.listMine, {})).rejects.toThrow(/unauthorized/i);
   });
 });
+
+describe("owner controls", () => {
+  it("lets only the owner edit, toggle visibility and delete", async () => {
+    const t = newTest();
+    const alice = await makeUser(t, "alice");
+    const bob = await makeUser(t, "bob");
+    const { id } = await makeVideo(t, alice);
+
+    await expect(bob.as.mutation(api.functions.videos.update, { id, title: "mine" })).rejects.toThrow(/do not own/i);
+    await expect(
+      bob.as.mutation(api.functions.videos.update, { id, visibility: "public" })
+    ).rejects.toThrow(/do not own/i);
+    await expect(bob.as.mutation(api.functions.videos.remove, { id })).rejects.toThrow(/do not own/i);
+
+    await alice.as.mutation(api.functions.videos.update, { id, title: "Renamed", visibility: "public" });
+    const [video] = await alice.as.query(api.functions.videos.listMine, {});
+    expect(video).toMatchObject({ title: "Renamed", visibility: "public" });
+  });
+
+  it("deleting a video deletes the stored file", async () => {
+    const t = newTest();
+    const alice = await makeUser(t, "alice");
+    const { id, storageId } = await makeVideo(t, alice);
+    expect(await t.run((ctx) => ctx.storage.getUrl(storageId))).not.toBeNull();
+
+    await alice.as.mutation(api.functions.videos.remove, { id });
+    expect(await t.run((ctx) => ctx.storage.getUrl(storageId))).toBeNull();
+    expect(await alice.as.query(api.functions.videos.listMine, {})).toHaveLength(0);
+    await expect(alice.as.mutation(api.functions.videos.remove, { id })).rejects.toThrow(/does not exist/i);
+  });
+
+  it("searches only the caller's own videos by title", async () => {
+    const t = newTest();
+    const alice = await makeUser(t, "alice");
+    const bob = await makeUser(t, "bob");
+    await makeVideo(t, alice, { title: "Quarterly planning" });
+    await makeVideo(t, alice, { title: "Bug repro" });
+    await makeVideo(t, bob, { title: "Planning secrets", visibility: "public" });
+
+    const results = await alice.as.query(api.functions.videos.listMine, { search: "planning" });
+    expect(results.map((v) => v.title)).toEqual(["Quarterly planning"]);
+  });
+});
