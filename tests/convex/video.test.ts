@@ -186,3 +186,56 @@ describe("owner controls", () => {
     expect(results.map((v) => v.title)).toEqual(["Quarterly planning"]);
   });
 });
+
+describe("who can watch", () => {
+  it("lets the owner watch their private video but nobody else", async () => {
+    const t = newTest();
+    const alice = await makeUser(t, "alice");
+    const eve = await makeUser(t, "eve");
+    const { id } = await makeVideo(t, alice, { visibility: "private" });
+
+    expect((await watch(alice, t, id))?.url).toBeTypeOf("string");
+    expect(await watch(eve, t, id)).toBeNull();
+    expect(await watch(null, t, id)).toBeNull();
+  });
+
+  it("lets anyone with the link watch a public video, signed in or not", async () => {
+    const t = newTest();
+    const alice = await makeUser(t, "alice");
+    const eve = await makeUser(t, "eve");
+    const { id } = await makeVideo(t, alice, { visibility: "public" });
+
+    expect((await watch(eve, t, id))?.url).toBeTypeOf("string");
+    expect((await watch(null, t, id))?.url).toBeTypeOf("string");
+    expect((await watch(null, t, id))?.isOwner).toBe(false);
+  });
+
+  it("follows visibility toggles", async () => {
+    const t = newTest();
+    const alice = await makeUser(t, "alice");
+    const { id } = await makeVideo(t, alice, { visibility: "public" });
+    await alice.as.mutation(api.functions.videos.update, { id, visibility: "private" });
+    expect(await watch(null, t, id)).toBeNull();
+  });
+
+  it("hides unfinished public videos from everyone but the owner", async () => {
+    const t = newTest();
+    const alice = await makeUser(t, "alice");
+    const id = await alice.as.mutation(api.functions.videos.create, {
+      title: "Pending",
+      duration: 1,
+      visibility: "public",
+    });
+    expect(await watch(null, t, id)).toBeNull();
+    expect((await watch(alice, t, id))?.url).toBeNull();
+  });
+
+  it("treats deleted videos and malformed ids as not found", async () => {
+    const t = newTest();
+    const alice = await makeUser(t, "alice");
+    const { id } = await makeVideo(t, alice, { visibility: "public" });
+    await alice.as.mutation(api.functions.videos.remove, { id });
+    expect(await watch(null, t, id)).toBeNull();
+    expect(await t.query(api.functions.videos.getForWatch, { id: "not-an-id" })).toBeNull();
+  });
+});
