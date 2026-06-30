@@ -239,3 +239,74 @@ describe("who can watch", () => {
     expect(await t.query(api.functions.videos.getForWatch, { id: "not-an-id" })).toBeNull();
   });
 });
+
+describe("videos in direct messages", () => {
+  it("lets DM members watch a private video that was shared there, and nobody else", async () => {
+    const { t, alice, bob, eve, dm } = await setupDm();
+    const { id } = await makeVideo(t, alice, { visibility: "private" });
+    expect(await watch(bob, t, id)).toBeNull();
+
+    await alice.as.mutation(api.functions.message.create, { directMessage: dm, content: "", video: id });
+    expect((await watch(bob, t, id))?.url).toBeTypeOf("string");
+    expect(await watch(eve, t, id)).toBeNull();
+    expect(await watch(null, t, id)).toBeNull();
+
+    const [message] = await bob.as.query(api.functions.message.list, { directMessage: dm });
+    expect(message.hasVideo).toBe(true);
+    expect(message.video).toMatchObject({ _id: id, title: "Demo" });
+    expect(message.video?.url).toBeTypeOf("string");
+  });
+
+  it("does not leak the video to people outside the conversation", async () => {
+    const { t, alice, eve, dm } = await setupDm();
+    const { id } = await makeVideo(t, alice);
+    await alice.as.mutation(api.functions.message.create, { directMessage: dm, content: "", video: id });
+    await expect(eve.as.query(api.functions.message.list, { directMessage: dm })).rejects.toThrow(/not a member/i);
+  });
+
+  it("only lets people post their own finished videos", async () => {
+    const { t, alice, bob, dm } = await setupDm();
+    const { id } = await makeVideo(t, alice);
+    await expect(
+      bob.as.mutation(api.functions.message.create, { directMessage: dm, content: "mine", video: id })
+    ).rejects.toThrow(/do not own/i);
+
+    const pending = await alice.as.mutation(api.functions.videos.create, {
+      title: "Pending",
+      duration: 1,
+      visibility: "private",
+    });
+    await expect(
+      alice.as.mutation(api.functions.message.create, { directMessage: dm, content: "", video: pending })
+    ).rejects.toThrow(/not ready/i);
+  });
+
+  it("still requires content or a video", async () => {
+    const { alice, dm } = await setupDm();
+    await expect(
+      alice.as.mutation(api.functions.message.create, { directMessage: dm, content: "  " })
+    ).rejects.toThrow(/empty/i);
+  });
+
+  it("shows a tombstone after the video is deleted", async () => {
+    const { t, alice, bob, dm } = await setupDm();
+    const { id } = await makeVideo(t, alice);
+    await alice.as.mutation(api.functions.message.create, { directMessage: dm, content: "look", video: id });
+    await alice.as.mutation(api.functions.videos.remove, { id });
+
+    const [message] = await bob.as.query(api.functions.message.list, { directMessage: dm });
+    expect(message).toMatchObject({ hasVideo: true, video: null });
+    expect(await watch(bob, t, id)).toBeNull();
+  });
+
+  it("loses access when the message that shared it is deleted", async () => {
+    const { t, alice, bob, dm } = await setupDm();
+    const { id } = await makeVideo(t, alice);
+    await alice.as.mutation(api.functions.message.create, { directMessage: dm, content: "look", video: id });
+    const [message] = await alice.as.query(api.functions.message.list, { directMessage: dm });
+    await alice.as.mutation(api.functions.message.remove, { id: message._id });
+
+    expect(await watch(bob, t, id)).toBeNull();
+    expect((await watch(alice, t, id))?.url).toBeTypeOf("string");
+  });
+});
