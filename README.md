@@ -47,15 +47,10 @@ flowchart LR
     K -- JWT --> C
     K -- user.created / updated / deleted webhook --> H[Convex HTTP action<br/>svix signature check]
     H --> C
-    B -- image and video upload --> S[Convex file storage]
-    C -. optional, if GROQ_API_KEY is set .-> G[Groq Whisper<br/>transcripts]
+    B -- image upload --> S[Convex file storage]
 ```
 
-Video flow: `videos.create` reserves a row (status `uploading`, rate limited) → the browser POSTs the blob to a Convex upload URL → `videos.finalize` checks the file is a video under 500 MB and flips the status to `ready`. Playback URLs (`storage.getUrl`) are only returned by queries that have passed the permission check (`canViewVideo` in `convex/functions/videos.ts`).
-
-Convex file storage has no file size limit, but the upload POST times out after 2 minutes and the free plan includes 1 GB of storage and 1 GB of bandwidth, so the app caps videos at 500 MB.
-
-Data model: `users`, `friends`, `directMessages` + `directMessageMembers`, `messages`, `reactions`, `typingIndicators`, `presence`, `servers`, `serverMembers`, `channels`, `channelMessages`, `videos` (owner, title, description, storageId, duration, size, mimeType, visibility, status, transcript). `messages` and `channelMessages` have an optional `video` field.
+Data model: `users`, `friends`, `directMessages` + `directMessageMembers`, `messages`, `reactions`, `typingIndicators`, `presence`, `servers`, `serverMembers`, `channels`, `channelMessages`.
 
 ## Tech stack
 
@@ -90,8 +85,6 @@ One-time Clerk + Convex wiring:
 
 ## Roadmap
 
-- [x] Screen recordings: library, share links, in-chat playback
-- [ ] Video thumbnails and view counts
 - [ ] Voice and video channels
 - [ ] Group direct messages
 - [ ] Reactions, replies and typing indicators in server channels
