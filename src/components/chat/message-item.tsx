@@ -14,6 +14,8 @@ import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ReactionBar } from "./reaction-bar";
+import { formatDuration } from "@/lib/recording";
+import Link from "next/link";
 import type { ChatMessage } from "./types";
 
 export type MessageActions = {
@@ -125,6 +127,39 @@ export function MessageItem({
             reactions={message.reactions ?? []}
             onToggle={(emoji) => actions.onToggleReaction?.(message, emoji)}
           />
+        )}
+
+        {message.hasVideo && (
+          <div className="mt-2 max-w-md">
+            {message.video?.url ? (
+              <div className="overflow-hidden rounded-lg border border-border/50 bg-card/50">
+                <video
+                  src={message.video.url}
+                  controls
+                  preload="metadata"
+                  playsInline
+                  className="aspect-video w-full bg-black"
+                />
+                <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs">
+                  <Link
+                    href={`/watch/${message.video._id}`}
+                    className="truncate font-medium hover:underline"
+                  >
+                    {message.video.title}
+                  </Link>
+                  {message.video.duration > 0 && (
+                    <span className="text-muted-foreground">
+                      {formatDuration(message.video.duration)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-border/50 px-3 py-2 text-xs italic text-muted-foreground">
+                This video was deleted.
+              </p>
+            )}
+          </div>
         )}
 
         {message.attachment && (

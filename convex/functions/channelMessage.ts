@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { authenticatedMutation, authenticatedQuery } from "./helpers";
 import { requireServerMember } from "./server";
 import { validateContent } from "./message";
+import { requireShareableVideo, toChatVideo } from "./videos";
 import { canDeleteOthersMessages } from "../lib/permissions";
 import { QueryCtx } from "../_generated/server";
 import { Doc, Id } from "../_generated/dataModel";
@@ -30,6 +31,8 @@ export const list = authenticatedQuery({
         ...message,
         sender: await ctx.db.get(message.sender),
         attachment: message.attachment ? await ctx.storage.getUrl(message.attachment) : undefined,
+        video: await toChatVideo(ctx, message.video),
+        hasVideo: Boolean(message.video),
       }))
     );
     return withDetails;
@@ -41,16 +44,19 @@ export const send = authenticatedMutation({
     channel: v.id("channels"),
     content: v.string(),
     attachment: v.optional(v.id("_storage")),
+    video: v.optional(v.id("videos")),
   },
-  handler: async (ctx, { channel, content: raw, attachment }) => {
-    const content = validateContent(raw, Boolean(attachment));
+  handler: async (ctx, { channel, content: raw, attachment, video }) => {
+    const content = validateContent(raw, Boolean(attachment || video));
     const { channel: row } = await loadChannel(ctx, ctx.user, channel);
+    if (video) await requireShareableVideo(ctx, ctx.user, video);
     await ctx.db.insert("channelMessages", {
       channel,
       server: row.server,
       sender: ctx.user._id,
       content,
       attachment,
+      video,
     });
   },
 });
@@ -64,7 +70,7 @@ export const edit = authenticatedMutation({
       throw new Error("You are not the sender of this message.");
     }
     await requireServerMember(ctx, ctx.user, message.server);
-    const content = validateContent(raw, Boolean(message.attachment));
+    const content = validateContent(raw, Boolean(message.attachment || message.video));
     if (content === message.content) return;
     await ctx.db.patch(id, { content, editedAt: Date.now() });
   },

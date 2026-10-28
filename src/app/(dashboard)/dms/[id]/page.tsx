@@ -156,6 +156,9 @@ export default function MessagePage({
             await sendMessage({ directMessage: id, content, attachment, replyTo: replyTarget?.id });
             setReplyTarget(null);
           }}
+          onSendVideo={async ({ id: video, content }) => {
+            await sendMessage({ directMessage: id, content, video });
+          }}
           onTyping={() => void sendTyping({ directMessage: id })}
         />
       </div>

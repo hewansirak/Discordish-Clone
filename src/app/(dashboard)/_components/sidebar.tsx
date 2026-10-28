@@ -20,7 +20,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { api } from "../../../../convex/_generated/api";
 import { useQuery } from "convex/react";
-import { Hash, User2Icon, Settings, LogOut } from "lucide-react";
+import { Hash, User2Icon, Settings, LogOut, VideoIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NewDirectMessage } from "./new-direct-message";
@@ -67,9 +67,24 @@ export function DashboardSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === "/videos"}
+                  className={cn(
+                    "discord-hover rounded-lg mb-1 h-10",
+                    pathname === "/videos" && "bg-primary/10 text-primary border-r-2 border-primary"
+                  )}
+                >
+                  <Link href="/videos" className="flex items-center gap-3">
+                    <VideoIcon className="w-5 h-5" />
+                    <span className="font-medium">Videos</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
-          
+
           <SidebarGroup className="mt-4">
             <SidebarGroupLabel className="flex items-center justify-between px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               <span>Direct Messages</span>

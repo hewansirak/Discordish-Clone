@@ -37,8 +37,10 @@ export default defineSchema({
     attachment: v.optional(v.id("_storage")),
     editedAt: v.optional(v.number()),
     replyTo: v.optional(v.id("messages")),
+    video: v.optional(v.id("videos")),
   })
     .index("by_directMessage", ["directMessage"])
+    .index("by_video", ["video"])
     .searchIndex("search_content", {
       searchField: "content",
       filterFields: ["directMessage"],
@@ -67,7 +69,35 @@ export default defineSchema({
     content: v.string(),
     attachment: v.optional(v.id("_storage")),
     editedAt: v.optional(v.number()),
-  }).index("by_channel", ["channel"]),
+    video: v.optional(v.id("videos")),
+  })
+    .index("by_channel", ["channel"])
+    .index("by_video", ["video"]),
+  videos: defineTable({
+    owner: v.id("users"),
+    title: v.string(),
+    description: v.optional(v.string()),
+    // Set once the upload finishes; absent while status is "uploading".
+    storageId: v.optional(v.id("_storage")),
+    /** Length in seconds (0 when the browser could not tell). */
+    duration: v.number(),
+    size: v.optional(v.number()),
+    mimeType: v.optional(v.string()),
+    visibility: v.union(v.literal("public"), v.literal("private")),
+    status: v.union(v.literal("uploading"), v.literal("ready"), v.literal("failed")),
+    transcript: v.optional(v.string()),
+    transcriptStatus: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("done"),
+        v.literal("failed"),
+        v.literal("unavailable")
+      )
+    ),
+  })
+    .index("by_owner", ["owner"])
+    .index("by_storage", ["storageId"])
+    .searchIndex("search_title", { searchField: "title", filterFields: ["owner"] }),
   reactions: defineTable({
     message: v.id("messages"),
     user: v.id("users"),

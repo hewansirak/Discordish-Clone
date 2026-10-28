@@ -26,9 +26,17 @@
 - Roles: owner, admin, member. Owners promote and demote admins; admins and owners remove members below their rank.
 - Member list with online status.
 
+**Screen recordings** (videos are a message type, not a separate silo)
+- Record your screen in the browser (`getDisplayMedia` + `MediaRecorder`, microphone mixed in) or pick an existing video file, and preview it before saving.
+- Video library at `/videos`: upload, search by title, copy the share link, switch between public and private, delete (the stored file is deleted too).
+- Public watch page at `/watch/<id>`. Public videos open for anyone with the link; private videos open for the owner and for anyone who can see a chat message that carries the video.
+- Record button in the DM and channel composers: record, upload, and the message plays the video inline.
+- Optional transcripts via Groq Whisper (only when `GROQ_API_KEY` is set in Convex; skipped for files over 25 MB).
+- Upload rate limit: 5 new videos per user per 10 minutes, enforced in the mutation.
+
 **Under the hood**
 - Every Convex query and mutation checks membership and role on the server; the UI never decides what is allowed.
-- 66 backend tests run against an in-memory Convex (`convex-test`), covering permissions, edge cases and regressions.
+- 91 backend tests run against an in-memory Convex (`convex-test`), covering permissions, edge cases and regressions.
 
 ## Architecture
 
@@ -39,10 +47,15 @@ flowchart LR
     K -- JWT --> C
     K -- user.created / updated / deleted webhook --> H[Convex HTTP action<br/>svix signature check]
     H --> C
-    B -- image upload --> S[Convex file storage]
+    B -- image and video upload --> S[Convex file storage]
+    C -. optional, if GROQ_API_KEY is set .-> G[Groq Whisper<br/>transcripts]
 ```
 
-Data model: `users`, `friends`, `directMessages` + `directMessageMembers`, `messages`, `reactions`, `typingIndicators`, `presence`, `servers`, `serverMembers`, `channels`, `channelMessages`.
+Video flow: `videos.create` reserves a row (status `uploading`, rate limited) → the browser POSTs the blob to a Convex upload URL → `videos.finalize` checks the file is a video under 500 MB and flips the status to `ready`. Playback URLs (`storage.getUrl`) are only returned by queries that have passed the permission check (`canViewVideo` in `convex/functions/videos.ts`).
+
+Convex file storage has no file size limit, but the upload POST times out after 2 minutes and the free plan includes 1 GB of storage and 1 GB of bandwidth, so the app caps videos at 500 MB.
+
+Data model: `users`, `friends`, `directMessages` + `directMessageMembers`, `messages`, `reactions`, `typingIndicators`, `presence`, `servers`, `serverMembers`, `channels`, `channelMessages`, `videos` (owner, title, description, storageId, duration, size, mimeType, visibility, status, transcript). `messages` and `channelMessages` have an optional `video` field.
 
 ## Tech stack
 
@@ -77,6 +90,8 @@ One-time Clerk + Convex wiring:
 
 ## Roadmap
 
+- [x] Screen recordings: library, share links, in-chat playback
+- [ ] Video thumbnails and view counts
 - [ ] Voice and video channels
 - [ ] Group direct messages
 - [ ] Reactions, replies and typing indicators in server channels

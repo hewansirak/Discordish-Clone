@@ -11,6 +11,10 @@ export type ChatMessage = {
   content: string;
   sender: ChatUser | null;
   attachment?: string | null;
+  /** Recorded video carried by the message; null when it has since been deleted. */
+  video?: { _id: string; title: string; duration: number; url: string | null } | null;
+  /** True when the message was sent with a video (even if it was deleted later). */
+  hasVideo?: boolean;
   /** Set when the author changed the text after sending. */
   editedAt?: number;
   reactions?: { emoji: string; count: number; reacted: boolean }[];

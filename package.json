@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",
-    "@types/node": "^20",
+    "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "convex-test": "^0.0.66",
@@ -52,5 +52,8 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
     "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": "^22.12.0"
   }
 }

@@ -87,6 +87,9 @@ export default function ChannelPage() {
           onSend={async ({ content, attachment }) => {
             await send({ channel, content, attachment });
           }}
+          onSendVideo={async ({ id, content }) => {
+            await send({ channel, content, video: id });
+          }}
         />
       </div>
     </div>

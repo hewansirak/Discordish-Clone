@@ -9,6 +9,7 @@ import { internal } from "../_generated/api";
 import { Doc, Id } from "../_generated/dataModel";
 import { QueryCtx } from "../_generated/server";
 import { summarizeReactions } from "../lib/emoji";
+import { requireShareableVideo, toChatVideo } from "./videos";
 
 export const MAX_MESSAGE_LENGTH = 2000;
 
@@ -42,6 +43,8 @@ export async function toClientMessage(
   return {
     ...message,
     attachment,
+    video: await toChatVideo(ctx, message.video),
+    hasVideo: Boolean(message.video),
     sender,
     replyTo,
     reactions: summarizeReactions(reactionRows, viewer),
@@ -58,7 +61,8 @@ async function getReplyPreview(ctx: QueryCtx, id: Id<"messages">) {
   return {
     _id: id,
     deleted: false as const,
-    content: original.content.slice(0, 120) || (original.attachment ? "Image" : ""),
+    content: original.content.slice(0, 120) ||
+      (original.video ? "Video" : original.attachment ? "Image" : ""),
     senderName: sender?.username ?? "Deleted User",
   };
 }
@@ -125,10 +129,12 @@ export const create = authenticatedMutation({
     directMessage: v.id("directMessages"),
     attachment: v.optional(v.id("_storage")),
     replyTo: v.optional(v.id("messages")),
+    video: v.optional(v.id("videos")),
   },
-  handler: async (ctx, { content: rawContent, directMessage, attachment, replyTo }) => {
-    const content = validateContent(rawContent, Boolean(attachment));
+  handler: async (ctx, { content: rawContent, directMessage, attachment, replyTo, video }) => {
+    const content = validateContent(rawContent, Boolean(attachment || video));
     await requireDmMember(ctx, ctx.user, directMessage);
+    if (video) await requireShareableVideo(ctx, ctx.user, video);
     if (replyTo) {
       const original = await ctx.db.get(replyTo);
       if (!original || original.directMessage !== directMessage) {
@@ -140,6 +146,7 @@ export const create = authenticatedMutation({
       directMessage,
       attachment,
       replyTo,
+      video,
       sender: ctx.user._id,
     });
     await ctx.scheduler.runAfter(0, internal.functions.typing.remove, {
@@ -161,7 +168,7 @@ export const edit = authenticatedMutation({
     } else if (message.sender !== ctx.user._id) {
       throw new Error("You are not the sender of this message.");
     }
-    const content = validateContent(rawContent, Boolean(message.attachment));
+    const content = validateContent(rawContent, Boolean(message.attachment || message.video));
     if (content === message.content) return;
     await ctx.db.patch(id, { content, editedAt: Date.now() });
   },

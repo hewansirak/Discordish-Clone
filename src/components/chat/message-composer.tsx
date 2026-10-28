@@ -2,7 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LoaderIcon, PlusIcon, SendIcon, XIcon } from "lucide-react";
+import { LoaderIcon, PlusIcon, SendIcon, VideoIcon, XIcon } from "lucide-react";
+import { RecordDialog } from "@/components/video/record-dialog";
+import { useVideoUpload } from "@/hooks/use-video-upload";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -17,6 +19,7 @@ export function MessageComposer({
   onTyping,
   replyingTo,
   onCancelReply,
+  onSendVideo,
 }: {
   placeholder?: string;
   generateUploadUrl: () => Promise<string>;
@@ -26,7 +29,11 @@ export function MessageComposer({
   /** Shows a "Replying to" bar above the input. */
   replyingTo?: { senderName: string; content: string } | null;
   onCancelReply?: () => void;
+  /** Provide to show a record button: the recording is uploaded, then posted with this video id. */
+  onSendVideo?: (video: { id: Id<"videos">; content: string }) => Promise<void>;
 }) {
+  const [recording, setRecording] = useState(false);
+  const uploadVideo = useVideoUpload();
   const [content, setContent] = useState("");
   const [attachment, setAttachment] = useState<Id<"_storage">>();
   const [file, setFile] = useState<File>();
@@ -111,6 +118,20 @@ export function MessageComposer({
             <span className="sr-only">Attach image</span>
           </Button>
 
+          {onSendVideo && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary"
+              onClick={() => setRecording(true)}
+              disabled={isUploading}
+            >
+              <VideoIcon className="w-5 h-5" />
+              <span className="sr-only">Record a video</span>
+            </Button>
+          )}
+
           <Input
             placeholder={placeholder}
             className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground placeholder:text-muted-foreground"
@@ -142,6 +163,25 @@ export function MessageComposer({
           </Button>
         </div>
       </div>
+
+      {onSendVideo && (
+        <RecordDialog
+          open={recording}
+          onOpenChange={setRecording}
+          title="Record a video"
+          confirmLabel="Send"
+          onConfirm={async (video) => {
+            const id = await uploadVideo({
+              blob: video.blob,
+              duration: video.duration,
+              title: `Screen recording ${new Date().toLocaleString()}`,
+              visibility: "private",
+            });
+            await onSendVideo({ id, content });
+            setContent("");
+          }}
+        />
+      )}
 
       <input
         type="file"
